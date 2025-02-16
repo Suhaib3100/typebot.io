@@ -1,106 +1,120 @@
-import prisma from '@typebot.io/lib/prisma'
-import { authenticatedProcedure } from '@/helpers/server/trpc'
-import { TRPCError } from '@trpc/server'
-import { smtpCredentialsSchema } from '@typebot.io/schemas/features/blocks/integrations/sendEmail'
-import { encrypt } from '@typebot.io/lib/api/encryption/encrypt'
-import { z } from 'zod'
-import { whatsAppCredentialsSchema } from '@typebot.io/schemas/features/whatsapp'
-import {
-  Credentials,
-  googleSheetsCredentialsSchema,
-  stripeCredentialsSchema,
-} from '@typebot.io/schemas'
-import { isDefined } from '@typebot.io/lib/utils'
-import { isWriteWorkspaceForbidden } from '@/features/workspace/helpers/isWriteWorkspaceForbidden'
-import { trackEvents } from '@typebot.io/telemetry/trackEvents'
-import { forgedCredentialsSchemas } from '@typebot.io/forge-repository/credentials'
+import { isWriteWorkspaceForbidden } from "@/features/workspace/helpers/isWriteWorkspaceForbidden";
+import { authenticatedProcedure } from "@/helpers/server/trpc";
+import { TRPCError } from "@trpc/server";
+import { encrypt } from "@typebot.io/credentials/encrypt";
+import type { Credentials } from "@typebot.io/credentials/schemas";
+import { googleSheetsCredentialsSchema } from "@typebot.io/credentials/schemas";
+import { smtpCredentialsSchema } from "@typebot.io/credentials/schemas";
+import { stripeCredentialsSchema } from "@typebot.io/credentials/schemas";
+import { whatsAppCredentialsSchema } from "@typebot.io/credentials/schemas";
+import { forgedCredentialsSchemas } from "@typebot.io/forge-repository/credentials";
+import { isDefined } from "@typebot.io/lib/utils";
+import prisma from "@typebot.io/prisma";
+import { trackEvents } from "@typebot.io/telemetry/trackEvents";
+import { z } from "@typebot.io/zod";
 
 const inputShape = {
   data: true,
   type: true,
-  workspaceId: true,
   name: true,
-} as const
+} as const;
+
+const credentialsCreateSchema = z
+  .discriminatedUnion("type", [
+    stripeCredentialsSchema.pick(inputShape),
+    smtpCredentialsSchema.pick(inputShape),
+    googleSheetsCredentialsSchema.pick(inputShape),
+    whatsAppCredentialsSchema.pick(inputShape),
+    ...Object.values(forgedCredentialsSchemas).map((schema) =>
+      schema.pick(inputShape),
+    ),
+  ])
+  .and(z.object({ id: z.string().cuid2().optional() }));
 
 export const createCredentials = authenticatedProcedure
-  .meta({
-    openapi: {
-      method: 'POST',
-      path: '/v1/credentials',
-      protect: true,
-      summary: 'Create credentials',
-      tags: ['Credentials'],
-    },
-  })
   .input(
-    z.object({
-      credentials: z
-        .discriminatedUnion('type', [
-          stripeCredentialsSchema.pick(inputShape),
-          smtpCredentialsSchema.pick(inputShape),
-          googleSheetsCredentialsSchema.pick(inputShape),
-          whatsAppCredentialsSchema.pick(inputShape),
-          ...Object.values(forgedCredentialsSchemas).map((i) =>
-            i.pick(inputShape)
-          ),
-        ])
-        .and(z.object({ id: z.string().cuid2().optional() })),
-    })
+    z.discriminatedUnion("scope", [
+      z.object({
+        scope: z.literal("workspace"),
+        credentials: credentialsCreateSchema,
+        workspaceId: z.string(),
+      }),
+      z.object({
+        scope: z.literal("user"),
+        credentials: credentialsCreateSchema,
+      }),
+    ]),
   )
   .output(
     z.object({
       credentialsId: z.string(),
-    })
+    }),
   )
-  .mutation(async ({ input: { credentials }, ctx: { user } }) => {
+  .mutation(async ({ input, ctx: { user } }) => {
+    if (input.scope === "user") {
+      const { encryptedData, iv } = await encrypt(input.credentials.data);
+      const createdCredentials = await prisma.userCredentials.create({
+        data: {
+          ...input.credentials,
+          userId: user.id,
+          data: encryptedData,
+          iv,
+        },
+      });
+      return { credentialsId: createdCredentials.id };
+    }
     if (
       await isNotAvailable(
-        credentials.name,
-        credentials.type as Credentials['type']
+        input.credentials.name,
+        input.credentials.type as Credentials["type"],
       )
     )
       throw new TRPCError({
-        code: 'CONFLICT',
-        message: 'Credentials already exist.',
-      })
+        code: "CONFLICT",
+        message: "Credentials already exist.",
+      });
     const workspace = await prisma.workspace.findFirst({
       where: {
-        id: credentials.workspaceId,
+        id: input.workspaceId,
       },
       select: { id: true, members: { select: { userId: true, role: true } } },
-    })
+    });
     if (!workspace || isWriteWorkspaceForbidden(workspace, user))
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Workspace not found' })
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Workspace not found",
+      });
 
-    const { encryptedData, iv } = await encrypt(credentials.data)
+    const { encryptedData, iv } = await encrypt(input.credentials.data);
     const createdCredentials = await prisma.credentials.create({
       data: {
-        ...credentials,
+        ...input.credentials,
+        workspaceId: input.workspaceId,
         data: encryptedData,
         iv,
       },
       select: {
         id: true,
       },
-    })
-    if (credentials.type === 'whatsApp')
+    });
+    if (input.credentials.type === "whatsApp")
       await trackEvents([
         {
           workspaceId: workspace.id,
           userId: user.id,
-          name: 'WhatsApp credentials created',
+          name: "WhatsApp credentials created",
         },
-      ])
-    return { credentialsId: createdCredentials.id }
-  })
+      ]);
+    return { credentialsId: createdCredentials.id };
+  });
 
-const isNotAvailable = async (name: string, type: Credentials['type']) => {
-  if (type !== 'whatsApp') return
+const isNotAvailable = async (name: string, type: Credentials["type"]) => {
+  if (type !== "whatsApp") return;
   const existingCredentials = await prisma.credentials.findFirst({
     where: {
       type,
       name,
     },
-  })
-  return isDefined(existingCredentials)
-}
+  });
+  return isDefined(existingCredentials);
+};

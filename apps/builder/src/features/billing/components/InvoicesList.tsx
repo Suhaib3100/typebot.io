@@ -1,48 +1,47 @@
+import { DownloadIcon, FileIcon } from "@/components/icons";
+import { toast } from "@/lib/toast";
+import { trpc } from "@/lib/trpc";
 import {
-  Stack,
-  Heading,
   Checkbox,
+  Heading,
+  IconButton,
   Skeleton,
+  Stack,
   Table,
   TableContainer,
   Tbody,
   Td,
+  Text,
   Th,
   Thead,
   Tr,
-  IconButton,
-  Text,
-} from '@chakra-ui/react'
-import { DownloadIcon, FileIcon } from '@/components/icons'
-import Link from 'next/link'
-import React from 'react'
-import { trpc } from '@/lib/trpc'
-import { useToast } from '@/hooks/useToast'
-import { useTranslate } from '@tolgee/react'
+} from "@chakra-ui/react";
+import { useTranslate } from "@tolgee/react";
+import Link from "next/link";
+import React from "react";
 
 type Props = {
-  workspaceId: string
-}
+  workspaceId: string;
+};
 
 export const InvoicesList = ({ workspaceId }: Props) => {
-  const { t } = useTranslate()
-  const { showToast } = useToast()
+  const { t } = useTranslate();
   const { data, status } = trpc.billing.listInvoices.useQuery(
     {
       workspaceId,
     },
     {
       onError: (error) => {
-        showToast({ description: error.message })
+        toast({ description: error.message });
       },
-    }
-  )
+    },
+  );
 
   return (
     <Stack spacing={6}>
-      <Heading fontSize="3xl">{t('billing.invoices.heading')}</Heading>
-      {data?.invoices.length === 0 && status !== 'loading' ? (
-        <Text>{t('billing.invoices.empty')}</Text>
+      <Heading fontSize="3xl">{t("billing.invoices.heading")}</Heading>
+      {data?.invoices.length === 0 && status !== "loading" ? (
+        <Text>{t("billing.invoices.empty")}</Text>
       ) : (
         <TableContainer>
           <Table>
@@ -50,8 +49,8 @@ export const InvoicesList = ({ workspaceId }: Props) => {
               <Tr>
                 <Th w="0" />
                 <Th>#</Th>
-                <Th>{t('billing.invoices.paidAt')}</Th>
-                <Th>{t('billing.invoices.subtotal')}</Th>
+                <Th>{t("billing.invoices.paidAt")}</Th>
+                <Th>{t("billing.invoices.subtotal")}</Th>
                 <Th w="0" />
               </Tr>
             </Thead>
@@ -65,7 +64,7 @@ export const InvoicesList = ({ workspaceId }: Props) => {
                   <Td>
                     {invoice.date
                       ? new Date(invoice.date * 1000).toDateString()
-                      : ''}
+                      : ""}
                   </Td>
                   <Td>{getFormattedPrice(invoice.amount, invoice.currency)}</Td>
                   <Td>
@@ -77,13 +76,13 @@ export const InvoicesList = ({ workspaceId }: Props) => {
                         variant="outline"
                         href={invoice.url}
                         target="_blank"
-                        aria-label={'Download invoice'}
+                        aria-label={"Download invoice"}
                       />
                     )}
                   </Td>
                 </Tr>
               ))}
-              {status === 'loading' &&
+              {status === "loading" &&
                 Array.from({ length: 3 }).map((_, idx) => (
                   <Tr key={idx}>
                     <Td>
@@ -102,14 +101,14 @@ export const InvoicesList = ({ workspaceId }: Props) => {
         </TableContainer>
       )}
     </Stack>
-  )
-}
+  );
+};
 
 const getFormattedPrice = (amount: number, currency: string) => {
-  const formatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
     currency,
-  })
+  });
 
-  return formatter.format(amount / 100)
-}
+  return formatter.format(amount / 100);
+};

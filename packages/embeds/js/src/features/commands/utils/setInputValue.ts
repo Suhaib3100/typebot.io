@@ -1,10 +1,11 @@
-import { CommandData } from '../types'
+import type { CommandArgs, CommandData } from "../types";
 
-export const setInputValue = (value: string) => {
+export const setInputValue = (value: string, { id }: CommandArgs = {}) => {
   const message: CommandData = {
     isFromTypebot: true,
-    command: 'setInputValue',
+    command: "setInputValue",
     value,
-  }
-  window.postMessage(message)
-}
+    id,
+  };
+  window.postMessage(message);
+};

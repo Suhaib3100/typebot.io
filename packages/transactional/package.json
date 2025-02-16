@@ -1,19 +1,22 @@
 {
-  "name": "transactional",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@typebot.io/transactional",
+  "type": "module",
   "scripts": {
-    "dev": "SKIP_ENV_CHECK=true dotenv -e ./.env -e ../../.env -- email dev --port=3005 --dir=templates"
+    "preview": "SKIP_ENV_CHECK=true dotenv -e ./.env -e ../../.env -- email dev --port=3005"
   },
-  "keywords": [],
-  "author": "Baptiste Arnaud",
-  "license": "AGPL-3.0-or-later",
+  "exports": {
+    "./*": "./*.tsx"
+  },
   "dependencies": {
-    "@react-email/components": "0.0.14",
-    "react-email": "2.0.0",
-    "@typebot.io/env": "workspace:*"
+    "@react-email/components": "0.0.25",
+    "@typebot.io/env": "workspace:*",
+    "nodemailer": "6.9.15",
+    "react-email": "3.0.6",
+    "@react-email/render": "1.0.4",
+    "react": "18.2.0"
   },
   "devDependencies": {
-    "dotenv-cli": "7.4.1"
+    "@typebot.io/tsconfig": "workspace:*",
+    "dotenv-cli": "8.0.0"
   }
 }

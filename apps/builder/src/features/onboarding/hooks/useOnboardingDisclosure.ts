@@ -1,16 +1,17 @@
-import { useDisclosure } from '@chakra-ui/react'
-import { onboardingVideos } from '../data'
-import { User } from '@typebot.io/schemas'
-import { useEffect, useState } from 'react'
-import { ForgedBlockDefinition } from '@typebot.io/forge-repository/types'
+import { useDisclosure } from "@chakra-ui/react";
+import type { ForgedBlockDefinition } from "@typebot.io/forge-repository/definitions";
+import type { User } from "@typebot.io/schemas/features/user/schema";
+import { useEffect, useState } from "react";
+import { onboardingVideos } from "../data";
 
 type Props = {
-  key?: keyof typeof onboardingVideos
-  updateUser: (data: Partial<User>) => void
-  user?: Pick<User, 'createdAt' | 'displayedInAppNotifications'>
-  defaultOpenDelay?: number
-  blockDef: ForgedBlockDefinition | undefined
-}
+  key?: keyof typeof onboardingVideos;
+  updateUser: (data: Partial<User>) => void;
+  user?: Pick<User, "createdAt" | "displayedInAppNotifications">;
+  defaultOpenDelay?: number;
+  blockDef: ForgedBlockDefinition | undefined;
+  isEnabled?: boolean;
+};
 
 export const useOnboardingDisclosure = ({
   key,
@@ -18,37 +19,39 @@ export const useOnboardingDisclosure = ({
   user,
   defaultOpenDelay,
   blockDef,
+  isEnabled = true,
 }: Props) => {
-  const [isInitialized, setIsInitialized] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false);
   const { isOpen, onOpen, onClose, onToggle } = useDisclosure({
     onOpen: () => {
-      if (!user || !key || user.displayedInAppNotifications?.[key]) return
+      if (!user || !key || user.displayedInAppNotifications?.[key]) return;
       updateUser({
         displayedInAppNotifications: {
           ...user.displayedInAppNotifications,
           [key]: true,
         },
-      })
+      });
     },
-  })
+  });
 
   useEffect(() => {
-    if (isInitialized || !user?.createdAt || !key) return
-    setIsInitialized(true)
+    if (isInitialized || !user?.createdAt || !key || !isEnabled) return;
+    setIsInitialized(true);
     if (
       key &&
-      new Date(user.createdAt) >=
-        (onboardingVideos[key]
-          ? onboardingVideos[key]!.deployedAt
-          : blockDef?.onboarding?.deployedAt ?? new Date()) &&
+      (!onboardingVideos[key]?.deployedAt ||
+        new Date(user.createdAt) >=
+          (onboardingVideos[key]
+            ? onboardingVideos[key]!.deployedAt
+            : (blockDef?.onboarding?.deployedAt ?? new Date()))) &&
       user.displayedInAppNotifications?.[key] === undefined
     ) {
       if (defaultOpenDelay) {
         setTimeout(() => {
-          onOpen()
-        }, defaultOpenDelay)
+          onOpen();
+        }, defaultOpenDelay);
       } else {
-        onOpen()
+        onOpen();
       }
     }
   }, [
@@ -59,7 +62,8 @@ export const useOnboardingDisclosure = ({
     onOpen,
     user?.createdAt,
     user?.displayedInAppNotifications,
-  ])
+    isEnabled,
+  ]);
 
-  return { isOpen, onClose, onToggle }
-}
+  return { isOpen, onClose, onOpen };
+};

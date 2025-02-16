@@ -1,31 +1,31 @@
-import { Button, ButtonProps, useDisclosure } from '@chakra-ui/react'
-import { useWorkspace } from '@/features/workspace/WorkspaceProvider'
-import React from 'react'
-import { isNotDefined } from '@typebot.io/lib'
-import { ChangePlanModal } from './ChangePlanModal'
-import { useTranslate } from '@tolgee/react'
+import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+import { Button, type ButtonProps, useDisclosure } from "@chakra-ui/react";
+import { useTranslate } from "@tolgee/react";
+import { isNotDefined } from "@typebot.io/lib/utils";
+import React from "react";
+import { ChangePlanModal } from "./ChangePlanModal";
 
 type Props = {
-  limitReachedType?: string
-  excludedPlans?: ('STARTER' | 'PRO')[]
-} & ButtonProps
+  limitReachedType?: string;
+  excludedPlans?: ("STARTER" | "PRO")[];
+} & ButtonProps;
 
 export const UpgradeButton = ({
   limitReachedType,
   excludedPlans,
   ...props
 }: Props) => {
-  const { t } = useTranslate()
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const { workspace } = useWorkspace()
+  const { t } = useTranslate();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { workspace } = useWorkspace();
   return (
     <Button
-      colorScheme="blue"
+      colorScheme="orange"
       {...props}
       isLoading={isNotDefined(workspace)}
       onClick={onOpen}
     >
-      {props.children ?? t('upgrade')}
+      {props.children ?? t("upgrade")}
       <ChangePlanModal
         isOpen={isOpen}
         onClose={onClose}
@@ -33,5 +33,5 @@ export const UpgradeButton = ({
         excludedPlans={excludedPlans}
       />
     </Button>
-  )
-}
+  );
+};

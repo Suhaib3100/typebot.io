@@ -1,72 +1,73 @@
+import { ImageIcon, PlusIcon } from "@/components/icons";
+import { useTypebot } from "@/features/editor/providers/TypebotProvider";
+import { useGraph } from "@/features/graph/providers/GraphProvider";
 import {
   Fade,
-  IconButton,
   Flex,
+  IconButton,
   Image,
   Popover,
-  Portal,
-  PopoverContent,
+  PopoverAnchor,
   PopoverArrow,
   PopoverBody,
-  PopoverAnchor,
-  useEventListener,
+  PopoverContent,
+  Portal,
   useColorModeValue,
-} from '@chakra-ui/react'
-import { ImageIcon, PlusIcon } from '@/components/icons'
-import { useTypebot } from '@/features/editor/providers/TypebotProvider'
-import { ItemIndices } from '@typebot.io/schemas'
-import React, { useRef } from 'react'
-import { PictureChoiceItem } from '@typebot.io/schemas/features/blocks/inputs/pictureChoice'
-import { useGraph } from '@/features/graph/providers/GraphProvider'
-import { PictureChoiceItemSettings } from './PictureChoiceItemSettings'
-import { isSvgSrc } from '@typebot.io/lib'
+  useEventListener,
+} from "@chakra-ui/react";
+import type { ItemIndices } from "@typebot.io/blocks-core/schemas/items/types";
+import type { PictureChoiceItem } from "@typebot.io/blocks-inputs/pictureChoice/schema";
+import { isSvgSrc } from "@typebot.io/lib/utils";
+import type React from "react";
+import { useRef } from "react";
+import { PictureChoiceItemSettings } from "./PictureChoiceItemSettings";
 
 type Props = {
-  item: PictureChoiceItem
-  indices: ItemIndices
-  isMouseOver: boolean
-}
+  item: PictureChoiceItem;
+  indices: ItemIndices;
+  isMouseOver: boolean;
+};
 
 export const PictureChoiceItemNode = ({
   item,
   indices,
   isMouseOver,
 }: Props) => {
-  const emptyImageBgColor = useColorModeValue('gray.100', 'gray.700')
-  const { openedItemId, setOpenedItemId } = useGraph()
-  const { updateItem, createItem, typebot } = useTypebot()
-  const ref = useRef<HTMLDivElement | null>(null)
+  const emptyImageBgColor = useColorModeValue("gray.100", "gray.700");
+  const { openedNodeId, setOpenedNodeId } = useGraph();
+  const { updateItem, createItem, typebot } = useTypebot();
+  const ref = useRef<HTMLDivElement | null>(null);
 
   const handlePlusClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    const itemIndex = indices.itemIndex + 1
-    createItem({}, { ...indices, itemIndex })
-  }
+    e.stopPropagation();
+    const itemIndex = indices.itemIndex + 1;
+    createItem({}, { ...indices, itemIndex });
+  };
 
-  const handleMouseDown = (e: React.MouseEvent) => e.stopPropagation()
+  const handleMouseDown = (e: React.MouseEvent) => e.stopPropagation();
 
   const openPopover = () => {
-    setOpenedItemId(item.id)
-  }
+    setOpenedNodeId(item.id);
+  };
 
   const handleItemChange = (updates: Partial<PictureChoiceItem>) => {
-    updateItem(indices, { ...item, ...updates })
-  }
+    updateItem(indices, { ...item, ...updates });
+  };
 
   const handleMouseWheel = (e: WheelEvent) => {
-    e.stopPropagation()
-  }
-  useEventListener('wheel', handleMouseWheel, ref.current)
+    e.stopPropagation();
+  };
+  useEventListener("wheel", handleMouseWheel, ref.current);
 
   const blockId = typebot
     ? typebot.groups.at(indices.groupIndex)?.blocks?.at(indices.blockIndex)?.id
-    : undefined
+    : undefined;
 
   return (
     <Popover
       placement="right"
       isLazy
-      isOpen={openedItemId === item.id}
+      isOpen={openedNodeId === item.id}
       closeOnBlur={false}
     >
       <PopoverAnchor>
@@ -85,10 +86,10 @@ export const PictureChoiceItemNode = ({
               src={item.pictureSrc}
               alt="Picture choice image"
               rounded="md"
-              maxH={isSvgSrc(item.pictureSrc) ? '64px' : '128px'}
+              maxH={isSvgSrc(item.pictureSrc) ? "64px" : "128px"}
               w="full"
-              objectFit={isSvgSrc(item.pictureSrc) ? 'contain' : 'cover'}
-              p={isSvgSrc(item.pictureSrc) ? '2' : undefined}
+              objectFit={isSvgSrc(item.pictureSrc) ? "contain" : "cover"}
+              p={isSvgSrc(item.pictureSrc) ? "2" : undefined}
               userSelect="none"
               draggable={false}
             />
@@ -107,10 +108,10 @@ export const PictureChoiceItemNode = ({
           <Fade
             in={isMouseOver}
             style={{
-              position: 'absolute',
-              bottom: '-15px',
+              position: "absolute",
+              bottom: "-15px",
               zIndex: 3,
-              left: '90px',
+              left: "90px",
             }}
             unmountOnExit
           >
@@ -133,7 +134,7 @@ export const PictureChoiceItemNode = ({
             py="6"
             overflowY="auto"
             maxH="400px"
-            shadow="lg"
+            shadow="md"
             ref={ref}
           >
             {typebot && blockId && (
@@ -149,5 +150,5 @@ export const PictureChoiceItemNode = ({
         </PopoverContent>
       </Portal>
     </Popover>
-  )
-}
+  );
+};

@@ -1,26 +1,25 @@
-import { FormLabel, HStack, Stack } from '@chakra-ui/react'
-import { ChatTheme, GeneralTheme } from '@typebot.io/schemas'
-import React from 'react'
+import { DropdownList } from "@/components/DropdownList";
+import { NumberInput } from "@/components/inputs";
+import { FormLabel, HStack, Stack } from "@chakra-ui/react";
 import {
   defaultBlur,
   defaultContainerBackgroundColor,
   defaultContainerMaxHeight,
   defaultContainerMaxWidth,
-  defaultDarkTextColor,
-  defaultLightTextColor,
   defaultOpacity,
   defaultRoundness,
-} from '@typebot.io/schemas/features/typebot/theme/constants'
-import { ContainerThemeForm } from './ContainerThemeForm'
-import { NumberInput } from '@/components/inputs'
-import { DropdownList } from '@/components/DropdownList'
-import { isChatContainerLight } from '@typebot.io/theme/isChatContainerLight'
+} from "@typebot.io/theme/constants";
+import { isChatContainerLight } from "@typebot.io/theme/helpers/isChatContainerLight";
+import type { ChatTheme, GeneralTheme } from "@typebot.io/theme/schemas";
+import { colors } from "@typebot.io/ui/colors";
+import React from "react";
+import { ContainerThemeForm } from "./ContainerThemeForm";
 
 type Props = {
-  generalBackground: GeneralTheme['background']
-  container: ChatTheme['container']
-  onContainerChange: (container: ChatTheme['container'] | undefined) => void
-}
+  generalBackground: GeneralTheme["background"];
+  container: ChatTheme["container"];
+  onContainerChange: (container: ChatTheme["container"] | undefined) => void;
+};
 
 export const ChatContainerForm = ({
   generalBackground,
@@ -28,34 +27,34 @@ export const ChatContainerForm = ({
   onContainerChange,
 }: Props) => {
   const updateMaxWidth = (maxWidth?: number) =>
-    updateDimension('maxWidth', maxWidth, maxWidthUnit)
+    updateDimension("maxWidth", maxWidth, maxWidthUnit);
 
   const updateMaxWidthUnit = (unit: string) =>
-    updateDimension('maxWidth', maxWidth, unit)
+    updateDimension("maxWidth", maxWidth, unit);
 
   const updateMaxHeight = (maxHeight?: number) =>
-    updateDimension('maxHeight', maxHeight, maxHeightUnit)
+    updateDimension("maxHeight", maxHeight, maxHeightUnit);
 
   const updateMaxHeightUnit = (unit: string) =>
-    updateDimension('maxHeight', maxHeight, unit)
+    updateDimension("maxHeight", maxHeight, unit);
 
   const updateDimension = (
-    dimension: 'maxWidth' | 'maxHeight',
+    dimension: "maxWidth" | "maxHeight",
     value: number | undefined,
-    unit: string
+    unit: string,
   ) =>
     onContainerChange({
       ...container,
       [dimension]: `${value}${unit}`,
-    })
+    });
 
   const { value: maxWidth, unit: maxWidthUnit } = parseValueAndUnit(
-    container?.maxWidth ?? defaultContainerMaxWidth
-  )
+    container?.maxWidth ?? defaultContainerMaxWidth,
+  );
 
   const { value: maxHeight, unit: maxHeightUnit } = parseValueAndUnit(
-    container?.maxHeight ?? defaultContainerMaxHeight
-  )
+    container?.maxHeight ?? defaultContainerMaxHeight,
+  );
 
   return (
     <Stack>
@@ -75,7 +74,7 @@ export const ChatContainerForm = ({
           />
           <DropdownList
             size="sm"
-            items={['px', '%', 'vh', 'vw']}
+            items={["px", "%", "vh", "vw"]}
             currentItem={maxWidthUnit}
             onItemSelect={updateMaxWidthUnit}
           />
@@ -98,7 +97,7 @@ export const ChatContainerForm = ({
           />
           <DropdownList
             size="sm"
-            items={['px', '%', 'vh', 'vw']}
+            items={["px", "%", "vh", "vw"]}
             currentItem={maxHeightUnit}
             onItemSelect={updateMaxHeightUnit}
           />
@@ -118,17 +117,17 @@ export const ChatContainerForm = ({
             chatContainer: container,
             generalBackground,
           })
-            ? defaultLightTextColor
-            : defaultDarkTextColor,
+            ? colors.gray.light["12"]
+            : colors.gray.dark["12"],
         }}
         onThemeChange={onContainerChange}
       />
     </Stack>
-  )
-}
+  );
+};
 
 const parseValueAndUnit = (valueWithUnit: string) => {
-  const value = parseFloat(valueWithUnit)
-  const unit = valueWithUnit.replace(value.toString(), '')
-  return { value, unit }
-}
+  const value = Number.parseFloat(valueWithUnit);
+  const unit = valueWithUnit.replace(value.toString(), "");
+  return { value, unit };
+};

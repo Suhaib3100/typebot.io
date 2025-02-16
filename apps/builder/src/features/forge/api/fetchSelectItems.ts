@@ -1,38 +1,63 @@
-import prisma from '@typebot.io/lib/prisma'
-import { authenticatedProcedure } from '@/helpers/server/trpc'
-import { TRPCError } from '@trpc/server'
-import { z } from 'zod'
-import { isReadWorkspaceFobidden } from '@/features/workspace/helpers/isReadWorkspaceFobidden'
-import { forgedBlocks } from '@typebot.io/forge-repository/definitions'
-import { forgedBlockIds } from '@typebot.io/forge-repository/constants'
-import { decrypt } from '@typebot.io/lib/api/encryption/decrypt'
+import { isReadWorkspaceFobidden } from "@/features/workspace/helpers/isReadWorkspaceFobidden";
+import { authenticatedProcedure } from "@/helpers/server/trpc";
+import { ClientToastError } from "@/lib/ClientToastError";
+import { TRPCError } from "@trpc/server";
+import { decrypt } from "@typebot.io/credentials/decrypt";
+import { forgedBlockIds } from "@typebot.io/forge-repository/constants";
+import { forgedBlocks } from "@typebot.io/forge-repository/definitions";
+import prisma from "@typebot.io/prisma";
+import { z } from "@typebot.io/zod";
+import { getFetchers } from "../helpers/getFetchers";
+
+const baseInputSchema = z.object({
+  integrationId: z.enum(forgedBlockIds),
+  fetcherId: z.string(),
+  options: z.any(),
+});
 
 export const fetchSelectItems = authenticatedProcedure
   .input(
-    z.object({
-      integrationId: z.enum(forgedBlockIds),
-      fetcherId: z.string(),
-      options: z.any(),
-      workspaceId: z.string(),
-    })
+    z.discriminatedUnion("scope", [
+      z
+        .object({
+          scope: z.literal("workspace"),
+          workspaceId: z.string(),
+        })
+        .merge(baseInputSchema),
+      z
+        .object({
+          scope: z.literal("user"),
+        })
+        .merge(baseInputSchema),
+    ]),
   )
-  .query(
-    async ({
-      input: { workspaceId, integrationId, fetcherId, options },
-      ctx: { user },
-    }) => {
+  .query(async ({ input, ctx: { user } }) => {
+    let credentials;
+    if (input.scope === "user") {
+      credentials = await prisma.userCredentials.findFirst({
+        where: {
+          userId: user.id,
+          id: input.options.credentialsId,
+        },
+        select: {
+          id: true,
+          data: true,
+          iv: true,
+        },
+      });
+    } else {
       const workspace = await prisma.workspace.findFirst({
-        where: { id: workspaceId },
+        where: { id: input.workspaceId },
         select: {
           members: {
             select: {
               userId: true,
             },
           },
-          credentials: options.credentialsId
+          credentials: input.options.credentialsId
             ? {
                 where: {
-                  id: options.credentialsId,
+                  id: input.options.credentialsId,
                 },
                 select: {
                   id: true,
@@ -42,35 +67,35 @@ export const fetchSelectItems = authenticatedProcedure
               }
             : undefined,
         },
-      })
+      });
 
       if (!workspace || isReadWorkspaceFobidden(workspace, user))
         throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'No workspace found',
-        })
+          code: "NOT_FOUND",
+          message: "No workspace found",
+        });
 
-      const credentials = workspace.credentials?.at(0)
-
-      const credentialsData = credentials
-        ? await decrypt(credentials.data, credentials.iv)
-        : undefined
-
-      const blockDef = forgedBlocks[integrationId]
-
-      const fetchers = (blockDef?.fetchers ?? []).concat(
-        blockDef?.actions.flatMap((action) => action.fetchers ?? []) ?? []
-      )
-      const fetcher = fetchers.find((fetcher) => fetcher.id === fetcherId)
-
-      if (!fetcher) return { items: [] }
-
-      return {
-        items: await fetcher.fetch({
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          credentials: credentialsData as any,
-          options,
-        }),
-      }
+      credentials = workspace.credentials?.at(0);
     }
-  )
+
+    const credentialsData = credentials
+      ? await decrypt(credentials.data, credentials.iv)
+      : undefined;
+
+    const blockDef = forgedBlocks[input.integrationId];
+
+    const fetcher = getFetchers(blockDef).find(
+      (fetcher) => fetcher.id === input.fetcherId,
+    );
+
+    if (!fetcher) return { items: [] };
+
+    const { data, error } = await fetcher.fetch({
+      credentials: credentialsData as any,
+      options: input.options,
+    });
+
+    if (error) throw new ClientToastError(error);
+
+    return { items: data };
+  });

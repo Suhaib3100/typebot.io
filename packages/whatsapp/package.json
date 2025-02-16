@@ -1,0 +1,32 @@
+{
+  "name": "@typebot.io/whatsapp",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@typebot.io/blocks-core": "workspace:*",
+    "@typebot.io/bot-engine": "workspace:*",
+    "@typebot.io/conditions": "workspace:*",
+    "@typebot.io/env": "workspace:*",
+    "@typebot.io/groups": "workspace:*",
+    "@typebot.io/lib": "workspace:*",
+    "@typebot.io/rich-text": "workspace:*",
+    "@typebot.io/settings": "workspace:*",
+    "@typebot.io/typebot": "workspace:*",
+    "@typebot.io/variables": "workspace:*",
+    "@typebot.io/zod": "workspace:*",
+    "@typebot.io/blocks-bubbles": "workspace:*",
+    "@typebot.io/blocks-inputs": "workspace:*",
+    "@typebot.io/prisma": "workspace:*",
+    "@typebot.io/chat-session": "workspace:*",
+    "@typebot.io/credentials": "workspace:*",
+    "@sentry/nextjs": "9.1.0",
+    "ky": "1.2.4"
+  },
+  "devDependencies": {
+    "@typebot.io/tsconfig": "workspace:*"
+  }
+}

@@ -1,15 +1,16 @@
-import React, { ReactElement } from 'react'
 import {
-  MjmlHead,
-  MjmlFont,
-  MjmlAttributes,
   MjmlAll,
-  MjmlStyle,
+  MjmlAttributes,
+  MjmlFont,
+  MjmlHead,
   MjmlRaw,
-} from '@faire/mjml-react'
-import { black, grayDark } from '../theme'
+  MjmlStyle,
+} from "@faire/mjml-react";
+import * as React from "react";
+import type { ReactElement } from "react";
+import { black, grayDark } from "../theme";
 
-type HeadProps = { children?: ReactElement }
+type HeadProps = { children?: ReactElement };
 
 export const Head = ({ children }: HeadProps) => (
   <MjmlHead>
@@ -78,4 +79,4 @@ export const Head = ({ children }: HeadProps) => (
       {children}
     </>
   </MjmlHead>
-)
+);

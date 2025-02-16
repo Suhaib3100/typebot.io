@@ -1,40 +1,40 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { MoreInfoTooltip } from '@/components/MoreInfoTooltip'
-import { Select } from '@/components/inputs/Select'
-import { VariablesButton } from '@/features/variables/components/VariablesButton'
-import { useWorkspace } from '@/features/workspace/WorkspaceProvider'
-import { useToast } from '@/hooks/useToast'
-import { trpc } from '@/lib/trpc'
+import { MoreInfoTooltip } from "@/components/MoreInfoTooltip";
+import { Select } from "@/components/inputs/Select";
+import { VariablesButton } from "@/features/variables/components/VariablesButton";
+import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+import { toast } from "@/lib/toast";
+import { trpc } from "@/lib/trpc";
 import {
   FormControl,
   FormHelperText,
   FormLabel,
   HStack,
   Stack,
-} from '@chakra-ui/react'
-import {
-  ForgedBlockDefinition,
-  ForgedBlock,
-} from '@typebot.io/forge-repository/types'
-import { ReactNode, useMemo } from 'react'
+} from "@chakra-ui/react";
+import type { ForgedBlockDefinition } from "@typebot.io/forge-repository/definitions";
+import type { ForgedBlock } from "@typebot.io/forge-repository/schemas";
+import { type ReactNode, useMemo } from "react";
+import { findFetcher } from "../helpers/findFetcher";
 
 type Props = {
-  blockDef: ForgedBlockDefinition
-  defaultValue?: string
-  fetcherId: string
-  options: ForgedBlock['options']
-  placeholder?: string
-  label?: string
-  helperText?: ReactNode
-  moreInfoTooltip?: string
-  direction?: 'row' | 'column'
-  isRequired?: boolean
-  width?: 'full'
-  withVariableButton?: boolean
-  onChange: (value: string | undefined) => void
-}
+  blockDef: ForgedBlockDefinition;
+  defaultValue?: string;
+  fetcherId: string;
+  options: ForgedBlock["options"];
+  placeholder?: string;
+  label?: string;
+  helperText?: ReactNode;
+  moreInfoTooltip?: string;
+  direction?: "row" | "column";
+  isRequired?: boolean;
+  width?: "full";
+  withVariableButton?: boolean;
+  credentialsScope: "workspace" | "user";
+  onChange: (value: string | undefined) => void;
+};
 export const ForgeSelectInput = ({
   defaultValue,
+  credentialsScope,
   fetcherId,
   options,
   blockDef,
@@ -43,60 +43,59 @@ export const ForgeSelectInput = ({
   helperText,
   moreInfoTooltip,
   isRequired,
-  direction = 'column',
+  direction = "column",
   width,
   withVariableButton = false,
   onChange,
 }: Props) => {
-  const { workspace } = useWorkspace()
-  const { showToast } = useToast()
+  const { workspace } = useWorkspace();
 
-  const baseFetcher = useMemo(() => {
-    const fetchers = blockDef.fetchers ?? []
-    return fetchers.find((fetcher) => fetcher.id === fetcherId)
-  }, [blockDef.fetchers, fetcherId])
-
-  const actionFetcher = useMemo(() => {
-    if (baseFetcher) return
-    const fetchers = blockDef.actions.flatMap((action) => action.fetchers ?? [])
-    return fetchers.find((fetcher) => fetcher.id === fetcherId)
-  }, [baseFetcher, blockDef.actions, fetcherId])
+  const fetcher = useMemo(
+    () => findFetcher(blockDef, fetcherId),
+    [blockDef, fetcherId],
+  );
 
   const { data } = trpc.forge.fetchSelectItems.useQuery(
+    credentialsScope === "workspace"
+      ? {
+          scope: "workspace",
+          integrationId: blockDef.id,
+          options: pick(
+            options,
+            (blockDef.auth ? ["credentialsId"] : []).concat(
+              fetcher?.dependencies ?? [],
+            ),
+          ),
+          workspaceId: workspace?.id as string,
+          fetcherId,
+        }
+      : {
+          scope: "user",
+          integrationId: blockDef.id,
+          options: {
+            credentialsId: options.credentialsId,
+          },
+          fetcherId,
+        },
     {
-      integrationId: blockDef.id,
-      options: pick(options, [
-        ...(actionFetcher ? ['action'] : []),
-        ...(blockDef.auth ? ['credentialsId'] : []),
-        ...((baseFetcher
-          ? baseFetcher.dependencies
-          : actionFetcher?.dependencies) ?? []),
-      ]),
-      workspaceId: workspace?.id as string,
-      fetcherId,
-    },
-    {
-      enabled: !!workspace?.id && (!!baseFetcher || !!actionFetcher),
+      enabled: !!workspace?.id && !!fetcher,
       onError: (error) => {
-        showToast({
-          description: error.message,
-          status: 'error',
-        })
+        if (error.data?.logError) toast(error.data.logError);
       },
-    }
-  )
+    },
+  );
 
   return (
     <FormControl
       isRequired={isRequired}
-      as={direction === 'column' ? Stack : HStack}
+      as={direction === "column" ? Stack : HStack}
       justifyContent="space-between"
-      width={label || width === 'full' ? 'full' : 'auto'}
-      spacing={direction === 'column' ? 2 : 3}
+      width={label || width === "full" ? "full" : "auto"}
+      spacing={direction === "column" ? 2 : 3}
     >
       {label && (
         <FormLabel mb="0" mr="0" flexShrink={0}>
-          {label}{' '}
+          {label}{" "}
           {moreInfoTooltip && (
             <MoreInfoTooltip>{moreInfoTooltip}</MoreInfoTooltip>
           )}
@@ -112,21 +111,21 @@ export const ForgeSelectInput = ({
         {withVariableButton ? (
           <VariablesButton
             onSelectVariable={(variable) => {
-              onChange(`{{${variable.name}}}`)
+              onChange(`{{${variable.name}}}`);
             }}
           />
         ) : null}
       </HStack>
       {helperText && <FormHelperText mt="0">{helperText}</FormHelperText>}
     </FormControl>
-  )
-}
+  );
+};
 
 function pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
-  if (!obj) return {} as Pick<T, K>
-  const ret: any = {}
+  if (!obj) return {} as Pick<T, K>;
+  const ret: any = {};
   keys.forEach((key) => {
-    ret[key] = obj[key]
-  })
-  return ret
+    ret[key] = obj[key];
+  });
+  return ret;
 }

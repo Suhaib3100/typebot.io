@@ -1,19 +1,19 @@
-import { AlertIcon } from '@/components/icons'
-import { BillingPortalButton } from '@/features/billing/components/BillingPortalButton'
-import { DashboardHeader } from '@/features/dashboard/components/DashboardHeader'
-import { useWorkspace } from '@/features/workspace/WorkspaceProvider'
-import { Heading, VStack, Text } from '@chakra-ui/react'
-import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { AlertIcon } from "@/components/icons";
+import { BillingPortalButton } from "@/features/billing/components/BillingPortalButton";
+import { DashboardHeader } from "@/features/dashboard/components/DashboardHeader";
+import { useWorkspace } from "@/features/workspace/WorkspaceProvider";
+import { Heading, Text, VStack } from "@chakra-ui/react";
+import { useRouter } from "next/router";
+import { useEffect } from "react";
 
 export default function Page() {
-  const { replace } = useRouter()
-  const { workspace } = useWorkspace()
+  const { replace } = useRouter();
+  const { workspace } = useWorkspace();
 
   useEffect(() => {
-    if (!workspace || workspace.isPastDue) return
-    replace('/typebots')
-  }, [replace, workspace])
+    if (!workspace || workspace.isPastDue) return;
+    replace("/typebots");
+  }, [replace, workspace]);
 
   return (
     <>
@@ -28,9 +28,12 @@ export default function Page() {
         <Heading fontSize="2xl">Your workspace has unpaid invoice(s).</Heading>
         <Text>Head over to the billing portal to pay it.</Text>
         {workspace?.id && (
-          <BillingPortalButton workspaceId={workspace?.id} colorScheme="blue" />
+          <BillingPortalButton
+            workspaceId={workspace?.id}
+            colorScheme="orange"
+          />
         )}
       </VStack>
     </>
-  )
+  );
 }

@@ -1,40 +1,48 @@
-import { getRuntimeVariable } from '@typebot.io/env/getRuntimeVariable'
+import type { BotContext } from "@/types";
+import { getRuntimeVariable } from "@typebot.io/env/getRuntimeVariable";
+import { defaultSystemMessages } from "@typebot.io/settings/constants";
 
 type Props = {
-  newFile: File
-  existingFiles: File[]
+  newFile: File;
+  existingFiles: File[];
   params: {
-    sizeLimit?: number
-  }
-  onError: (message: { title?: string; description: string }) => void
-}
+    sizeLimit?: number;
+  };
+  context: BotContext;
+  onError: (message: { description: string }) => void;
+};
 export const sanitizeNewFile = ({
   newFile,
   existingFiles,
   params,
+  context,
   onError,
 }: Props): File | undefined => {
   const sizeLimit =
     params.sizeLimit ??
-    getRuntimeVariable('NEXT_PUBLIC_BOT_FILE_UPLOAD_MAX_SIZE')
+    getRuntimeVariable("NEXT_PUBLIC_BOT_FILE_UPLOAD_MAX_SIZE");
 
-  if (sizeLimit && newFile.size > sizeLimit * 1024 * 1024) {
+  if (sizeLimit && newFile.size > Number(sizeLimit) * 1024 * 1024) {
     onError({
-      title: 'File too large',
-      description: `${newFile.name} is larger than ${sizeLimit}MB`,
-    })
-    return
+      description: (
+        context.typebot.settings.general?.systemMessages?.fileUploadSizeError ??
+        defaultSystemMessages.fileUploadSizeError
+      )
+        .replace("[[file]]", newFile.name)
+        .replace("[[limit]]", sizeLimit),
+    });
+    return;
   }
 
-  if (existingFiles.length === 0) return newFile
+  if (existingFiles.length === 0) return newFile;
 
-  let fileName = newFile.name
-  let counter = 1
+  let fileName = newFile.name;
+  let counter = 1;
   while (existingFiles.some((file) => file.name === fileName)) {
-    const dotIndex = newFile.name.lastIndexOf('.')
-    const extension = dotIndex !== -1 ? newFile.name.slice(dotIndex) : ''
-    fileName = `${newFile.name.slice(0, dotIndex)}(${counter})${extension}`
-    counter++
+    const dotIndex = newFile.name.lastIndexOf(".");
+    const extension = dotIndex !== -1 ? newFile.name.slice(dotIndex) : "";
+    fileName = `${newFile.name.slice(0, dotIndex)}(${counter})${extension}`;
+    counter++;
   }
-  return new File([newFile], fileName, { type: newFile.type })
-}
+  return new File([newFile], fileName, { type: newFile.type });
+};

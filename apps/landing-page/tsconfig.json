@@ -1,0 +1,17 @@
+{
+  "extends": "@typebot.io/tsconfig/react.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./app/*"],
+      "@/content-collections": ["./.content-collections/generated"]
+    },
+    "module": "ESNext"
+  },
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "app.config.ts",
+    "content-collection.ts"
+  ]
+}

@@ -1,149 +1,158 @@
+import { TextLink } from "@/components/TextLink";
+import { toast } from "@/lib/toast";
+import { sanitizeUrl } from "@braintree/sanitize-url";
 import {
-  Button,
-  HTMLChakraProps,
-  Input,
-  Stack,
-  HStack,
-  Text,
-  Spinner,
   Alert,
-  Flex,
   AlertIcon,
+  Button,
+  FormControl,
+  FormLabel,
+  HStack,
+  type HTMLChakraProps,
+  Input,
+  PinInput,
+  PinInputField,
   SlideFade,
-} from '@chakra-ui/react'
-import React, { ChangeEvent, FormEvent, useEffect } from 'react'
-import { useState } from 'react'
+  Spinner,
+  Stack,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
+import { useTranslate } from "@tolgee/react";
+import type { BuiltInProviderType } from "next-auth/providers/index";
 import {
-  ClientSafeProvider,
+  type ClientSafeProvider,
+  type LiteralUnion,
   getProviders,
-  LiteralUnion,
   signIn,
   useSession,
-} from 'next-auth/react'
-import { DividerWithText } from './DividerWithText'
-import { SocialLoginButtons } from './SocialLoginButtons'
-import { useRouter } from 'next/router'
-import { BuiltInProviderType } from 'next-auth/providers'
-import { useToast } from '@/hooks/useToast'
-import { TextLink } from '@/components/TextLink'
-import { SignInError } from './SignInError'
-import { useTranslate } from '@tolgee/react'
-import { sanitizeUrl } from '@braintree/sanitize-url'
+} from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useQueryState } from "nuqs";
+import type { ChangeEvent, FormEvent } from "react";
+import React, { useEffect, useState } from "react";
+import { createEmailMagicLink } from "../helpers/createEmailMagicLink";
+import { DividerWithText } from "./DividerWithText";
+import { SignInError } from "./SignInError";
+import { SocialLoginButtons } from "./SocialLoginButtons";
 
 type Props = {
-  defaultEmail?: string
-}
+  defaultEmail?: string;
+};
 
 export const SignInForm = ({
   defaultEmail,
-}: Props & HTMLChakraProps<'form'>) => {
-  const { t } = useTranslate()
-  const router = useRouter()
-  const { status } = useSession()
-  const [authLoading, setAuthLoading] = useState(false)
-  const [isLoadingProviders, setIsLoadingProviders] = useState(true)
+}: Props & HTMLChakraProps<"form">) => {
+  const { t } = useTranslate();
+  const router = useRouter();
+  const [authError, setAuthError] = useQueryState("error");
+  const [redirectPath] = useQueryState("redirectPath");
+  const { status } = useSession();
+  const [authLoading, setAuthLoading] = useState(false);
+  const [isLoadingProviders, setIsLoadingProviders] = useState(true);
 
-  const [emailValue, setEmailValue] = useState(defaultEmail ?? '')
-  const [isMagicLinkSent, setIsMagicLinkSent] = useState(false)
+  const [emailValue, setEmailValue] = useState(defaultEmail ?? "");
+  const [isMagicCodeSent, setIsMagicCodeSent] = useState(false);
 
-  const { showToast } = useToast()
   const [providers, setProviders] =
     useState<
       Record<LiteralUnion<BuiltInProviderType, string>, ClientSafeProvider>
-    >()
+    >();
 
   const hasNoAuthProvider =
-    !isLoadingProviders && Object.keys(providers ?? {}).length === 0
+    !isLoadingProviders && Object.keys(providers ?? {}).length === 0;
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      const redirectPath = router.query.redirectPath?.toString()
-      router.replace(redirectPath ? sanitizeUrl(redirectPath) : '/typebots')
-      return
+    if (status === "authenticated") {
+      router.replace(redirectPath ? sanitizeUrl(redirectPath) : "/typebots");
+      return;
     }
-    ;(async () => {
-      const providers = await getProviders()
-      setProviders(providers ?? undefined)
-      setIsLoadingProviders(false)
-    })()
-  }, [status, router])
+    (async () => {
+      const providers = await getProviders();
+      setProviders(providers ?? undefined);
+      setIsLoadingProviders(false);
+    })();
+  }, [status, router]);
 
   useEffect(() => {
-    if (!router.isReady) return
-    if (router.query.error === 'ip-banned') {
-      showToast({
-        status: 'info',
+    if (authError === "ip-banned") {
+      toast({
+        status: "info",
         description:
-          'Your account has suspicious activity and is being reviewed by our team. Feel free to contact us.',
-      })
+          "Your account has suspicious activity and is being reviewed by our team. Feel free to contact us.",
+      });
     }
-  }, [router.isReady, router.query.error, showToast])
+  }, [authError]);
 
   const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) =>
-    setEmailValue(e.target.value)
+    setEmailValue(e.target.value);
 
   const handleEmailSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    if (isMagicLinkSent) return
-    setAuthLoading(true)
+    e.preventDefault();
+    setAuthError(null);
+    if (isMagicCodeSent) return;
+    setAuthLoading(true);
     try {
-      const response = await signIn('email', {
+      const response = await signIn("email", {
         email: emailValue,
         redirect: false,
-      })
+      });
       if (response?.error) {
-        if (response.error.includes('rate-limited'))
-          showToast({
-            status: 'info',
-            description: t('auth.signinErrorToast.tooManyRequests'),
-          })
-        else if (response.error.includes('sign-up-disabled'))
-          showToast({
-            title: t('auth.signinErrorToast.title'),
-            description: t('auth.signinErrorToast.description'),
-          })
+        if (response.error.includes("rate-limited"))
+          toast({
+            status: "info",
+            description: t("auth.signinErrorToast.tooManyRequests"),
+          });
+        else if (response.error.includes("sign-up-disabled"))
+          toast({
+            status: "info",
+            description: t("auth.signinErrorToast.title"),
+          });
         else
-          showToast({
-            status: 'info',
-            description: t('errorMessage'),
-            details: {
-              content: 'Check server logs to see relevent error message.',
-              lang: 'json',
-            },
-          })
+          toast({
+            status: "info",
+            description: t("errorMessage"),
+            details: "Check server logs to see relevent error message.",
+          });
       } else {
-        setIsMagicLinkSent(true)
+        setIsMagicCodeSent(true);
       }
     } catch (e) {
-      showToast({
-        status: 'info',
-        description: 'An error occured while signing in',
-      })
+      toast({
+        status: "info",
+        description: "An error occured while signing in",
+      });
     }
-    setAuthLoading(false)
-  }
+    setAuthLoading(false);
+  };
 
-  if (isLoadingProviders) return <Spinner />
+  const redirectToMagicLink = (token: string) => {
+    window.location.assign(
+      createEmailMagicLink(token, emailValue, redirectPath ?? undefined),
+    );
+  };
+
+  if (isLoadingProviders) return <Spinner />;
   if (hasNoAuthProvider)
     return (
       <Text>
-        {t('auth.noProvider.preLink')}{' '}
+        {t("auth.noProvider.preLink")}{" "}
         <TextLink
           href="https://docs.typebot.io/self-hosting/configuration"
           isExternal
         >
-          {t('auth.noProvider.link')}
+          {t("auth.noProvider.link")}
         </TextLink>
       </Text>
-    )
+    );
   return (
-    <Stack spacing="4" w="330px">
-      {!isMagicLinkSent && (
+    <Stack spacing="6" w="330px">
+      {!isMagicCodeSent && (
         <>
           <SocialLoginButtons providers={providers} />
           {providers?.email && (
             <>
-              <DividerWithText mt="6">{t('auth.orEmailLabel')}</DividerWithText>
+              <DividerWithText>{t("auth.orEmailLabel")}</DividerWithText>
               <HStack as="form" onSubmit={handleEmailSubmit}>
                 <Input
                   name="email"
@@ -157,33 +166,44 @@ export const SignInForm = ({
                 <Button
                   type="submit"
                   isLoading={
-                    ['loading', 'authenticated'].includes(status) || authLoading
+                    ["loading", "authenticated"].includes(status) || authLoading
                   }
-                  isDisabled={isMagicLinkSent}
+                  isDisabled={isMagicCodeSent}
                 >
-                  {t('auth.emailSubmitButton.label')}
+                  {t("auth.emailSubmitButton.label")}
                 </Button>
               </HStack>
             </>
           )}
         </>
       )}
-      {router.query.error && (
-        <SignInError error={router.query.error.toString()} />
-      )}
-      <SlideFade offsetY="20px" in={isMagicLinkSent} unmountOnExit>
-        <Flex>
+      <SlideFade offsetY="20px" in={isMagicCodeSent} unmountOnExit>
+        <Stack spacing={3}>
           <Alert status="success" w="100%">
             <HStack>
               <AlertIcon />
               <Stack spacing={1}>
-                <Text fontWeight="semibold">{t('auth.magicLink.title')}</Text>
-                <Text fontSize="sm">{t('auth.magicLink.description')}</Text>
+                <Text fontWeight="medium">{t("auth.magicLink.title")}</Text>
+                <Text fontSize="sm">{t("auth.magicLink.description")}</Text>
               </Stack>
             </HStack>
           </Alert>
-        </Flex>
+          <FormControl as={VStack} spacing={0}>
+            <FormLabel>Login code:</FormLabel>
+            <HStack>
+              <PinInput onComplete={redirectToMagicLink}>
+                <PinInputField />
+                <PinInputField />
+                <PinInputField />
+                <PinInputField />
+                <PinInputField />
+                <PinInputField />
+              </PinInput>
+            </HStack>
+          </FormControl>
+        </Stack>
       </SlideFade>
+      {authError && <SignInError error={authError} />}
     </Stack>
-  )
-}
+  );
+};

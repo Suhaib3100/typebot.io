@@ -1,0 +1,7 @@
+{
+  "extends": "@typebot.io/tsconfig/base.json",
+  "include": ["**/*.ts", "**/*.tsx"],
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  }
+}

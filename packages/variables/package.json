@@ -1,11 +1,19 @@
 {
   "name": "@typebot.io/variables",
-  "version": "1.0.0",
-  "license": "AGPL-3.0-or-later",
+  "version": "0.0.1",
+  "type": "module",
   "private": true,
+  "exports": {
+    "./*": "./src/*.ts"
+  },
   "dependencies": {
     "@typebot.io/lib": "workspace:*",
-    "@typebot.io/tsconfig": "workspace:*",
-    "isolated-vm": "5.0.1"
+    "isolated-vm": "5.0.1",
+    "@typebot.io/zod": "workspace:*",
+    "@typebot.io/prisma": "workspace:*",
+    "@typebot.io/env": "workspace:*"
+  },
+  "devDependencies": {
+    "@typebot.io/tsconfig": "workspace:*"
   }
 }

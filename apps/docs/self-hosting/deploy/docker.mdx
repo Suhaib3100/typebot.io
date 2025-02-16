@@ -9,7 +9,7 @@ title: Docker
   Typebot's founder. The cloud version can save a substantial amount of
   developer time and resources. For most sites this ends up being the best value
   option and the revenue goes to funding the maintenance and further development
-  of Typebot. So you'll be supporting open source software and getting a great
+  of Typebot. So you'll be supporting fair source software and getting a great
   service!
 </Info>
 
@@ -135,6 +135,9 @@ services:
       virtual.host: 'bot.domain.com' # change to your domain name
       virtual.port: '3000'
       virtual.tls-email: 'admin@example.com' # change to your email
+      # Necessary to enable message streaming
+      virtual.proxy.directives: |
+        flush_interval -1
 ```
 
 This config requires you to add the following DNS entry:
@@ -261,22 +264,28 @@ services:
       - typebot-builder
       - typebot-viewer
   typebot-db:
-    image: postgres:14-alpine
+    image: postgres:16
     restart: always
     volumes:
       - db-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=typebot
       - POSTGRES_PASSWORD=typebot
+    healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U postgres"]
+        interval: 5s
+        timeout: 5s
+        retries: 5
   typebot-builder:
     labels:
       virtual.host: 'typebot.domain.com' # change to your domain
       virtual.port: '3000'
       virtual.tls-email: 'admin@example.com' # change to your email
     image: baptistearno/typebot-builder:latest
-    restart: always
     depends_on:
-      - typebot-db
+      typebot-db:
+        condition: service_healthy
+    restart: always
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     # See https://docs.typebot.io/self-hosting/configuration for more configuration options
@@ -287,7 +296,13 @@ services:
       virtual.host: 'bot.domain.com' # change to your domain
       virtual.port: '3000'
       virtual.tls-email: 'admin@example.com' # change to your email
+      # Necessary to enable message streaming
+      virtual.proxy.directives: |
+        flush_interval -1
     image: baptistearno/typebot-viewer:latest
+    depends_on:
+      typebot-db:
+        condition: service_healthy
     restart: always
     # See https://docs.typebot.io/self-hosting/configuration for more configuration options
     env_file:

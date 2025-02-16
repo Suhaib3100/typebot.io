@@ -1,16 +1,13 @@
 <br />
 <p align="center">
-  <a href="https://typebot.io/#gh-light-mode-only" target="_blank">
-    <img src="./.github/images/logo-light.png" alt="Typebot illustration" width="350px">
-  </a>
-  <a href="https://typebot.io/#gh-dark-mode-only" target="_blank">
-    <img src="./.github/images/logo-dark.png" alt="Typebot illustration" width="350px">
-  </a>
+<a href="https://typebot.io" target="_blank">
+  <img src="./.github/images/banner.png" alt="Typebot banner">
+</a>
 </p>
 <br />
 
 <p align="center">
-Typebot is an open-source chatbot builder. It allows you to create advanced chatbots visually, embed them anywhere on your web/mobile apps, and collect results in real-time
+Typebot is an Fair Source chatbot builder. It allows you to create advanced chatbots visually, embed them anywhere on your web/mobile apps, and collect results in real-time
 </p>
 
 <p align="center">
@@ -22,9 +19,7 @@ Typebot is an open-source chatbot builder. It allows you to create advanced chat
 </a>
 <a href="https://github.com/baptistearno/typebot.io/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License">
 <a href="https://status.typebot.io"><img height="20px" src="https://betteruptime.com/status-badges/v1/monitor/a9kf.svg" alt="Uptime"></a>
-<a href="https://github.com/baptisteArno/typebot.io/issues/new"><img src="https://img.shields.io/badge/Report a bug-Github-%231F80C0" alt="Report a bug"></a>
-<a href="https://github.com/baptisteArno/typebot.io/discussions/new?category=q-a"><img src="https://img.shields.io/badge/Ask a question-Github-%231F80C0" alt="Ask a question"></a>
-<a href="https://console.algora.io/org/typebot/bounties?status=open"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fconsole.algora.io%2Fapi%2Fshields%2Ftypebot%2Fbounties%3Fstatus%3Dopen" alt="Ask a question"></a>
+<a href="https://github.com/baptisteArno/typebot.io/issues/new?template=bug_report.md"><img src="https://img.shields.io/badge/Report a bug-Github-%231F80C0" alt="Report a bug"></a>
 <a href="https://typebot.io/discord"><img src="https://img.shields.io/badge/Join community-Discord-%23404EED" alt="Ask a question"></a>
 
 </p>
@@ -79,7 +74,7 @@ Built for **developers**:
 The easiest way to get started with Typebot is with [the official managed service in the Cloud](https://app.typebot.io). You'll have high availability, backups, security, and maintenance all managed for you by me, [Baptiste, Typebot's founder](https://twitter.com/baptisteArno).
 
 The cloud version can save a substantial amount of developer time and resources. For most sites this ends up being the best value option and the revenue goes to funding the maintenance and further development of Typebot.
-So you’ll be supporting open source software and getting a great service! 💙
+So you’ll be supporting fair source software and getting a great service! 💙
 
 ## Support & Community
 
@@ -110,4 +105,4 @@ Made with [contrib.rocks](https://contrib.rocks).
 
 ## License
 
-Most of Typebot's code is open-source under the GNU Affero General Public License Version 3 (AGPLv3). You will find more information about the license and how to comply with it [here](https://docs.typebot.io/self-hosting#license-requirements).
+Typebot's code is protected under a Functional Source License. You will find more information about the license and how to comply with it [here](https://docs.typebot.io/self-hosting#license-requirements).

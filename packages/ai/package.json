@@ -1,14 +1,20 @@
 {
   "name": "@typebot.io/ai",
-  "version": "1.0.0",
-  "license": "AGPL-3.0-or-later",
+  "version": "0.0.1",
   "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
   "dependencies": {
     "@typebot.io/forge": "workspace:*",
+    "@typebot.io/zod": "workspace:*",
     "@typebot.io/lib": "workspace:*",
-    "@typebot.io/tsconfig": "workspace:*",
     "@typebot.io/variables": "workspace:*",
-    "ai": "3.3.15",
+    "ai": "4.1.15",
     "ky": "1.2.4"
+  },
+  "devDependencies": {
+    "@typebot.io/tsconfig": "workspace:*"
   }
 }

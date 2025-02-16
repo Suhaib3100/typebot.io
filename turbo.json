@@ -1,34 +1,25 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "ui": "stream",
   "globalDependencies": [".env"],
-  "globalEnv": ["DATABASE_URL", "SKIP_ENV_CHECK"],
+  "globalEnv": ["DATABASE_URL", "SKIP_ENV_CHECK", "DATABASE_URL_REPLICA"],
   "globalPassThroughEnv": ["ENCRYPTION_SECRET"],
+  "envMode": "loose",
   "tasks": {
-    "lint": {
-      "outputs": []
-    },
-    "format:check": {
-      "outputs": []
-    },
     "dev": {
-      "dependsOn": [
-        "^dev",
-        "@typebot.io/prisma#db:generate",
-        "@typebot.io/prisma#db:push"
-      ],
       "cache": false,
+      "dependsOn": ["^db:generate", "^db:push", "@typebot.io/react#build"],
       "persistent": true
     },
     "build": {
       "env": ["VERCEL_*", "NEXTAUTH_URL", "SENTRY_*", "LANDING_PAGE_URL"],
-      "dependsOn": ["^build", "@typebot.io/prisma#db:generate"],
+      "dependsOn": ["^build", "^db:generate"],
       "outputs": [
         ".next/**",
         "!.next/cache/**",
         "dist/**",
         "build/**",
-        "public/__ENV.js"
+        "public/__ENV.js",
+        ".vercel"
       ],
       "inputs": ["$TURBO_DEFAULT$", ".env"],
       "outputLogs": "new-only"
@@ -45,7 +36,13 @@
     "db:generate": {
       "cache": false
     },
+    "db:migrate": {
+      "cache": false
+    },
     "db:push": {
+      "cache": false
+    },
+    "check-broken-links": {
       "cache": false
     },
     "db:cleanDatabase": {
@@ -56,6 +53,10 @@
     "checkAndReportChatsUsage": {
       "env": ["STRIPE_*", "NEXTAUTH_URL", "SMTP_*"],
       "dependsOn": ["@typebot.io/prisma#db:generate"],
+      "cache": false
+    },
+    "//#format-and-lint": {},
+    "//#format-and-lint:fix": {
       "cache": false
     }
   }

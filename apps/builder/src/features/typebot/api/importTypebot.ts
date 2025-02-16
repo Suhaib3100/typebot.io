@@ -1,25 +1,27 @@
-import prisma from '@typebot.io/lib/prisma'
-import { authenticatedProcedure } from '@/helpers/server/trpc'
-import { TRPCError } from '@trpc/server'
-import { Plan, WorkspaceRole } from '@typebot.io/prisma'
+import { getUserModeInWorkspace } from "@/features/workspace/helpers/getUserRoleInWorkspace";
+import { authenticatedProcedure } from "@/helpers/server/trpc";
+import { createId } from "@paralleldrive/cuid2";
+import { TRPCError } from "@trpc/server";
+import { duplicateTypebotS3Objects } from "@typebot.io/lib/s3/duplicateTypebotS3Objects";
+import prisma from "@typebot.io/prisma";
+import { Plan } from "@typebot.io/prisma/enum";
+import { trackEvents } from "@typebot.io/telemetry/trackEvents";
+import { migrateTypebot } from "@typebot.io/typebot/migrations/migrateTypebot";
+import { preprocessTypebot } from "@typebot.io/typebot/preprocessTypebot";
 import {
-  Typebot,
-  TypebotV6,
+  type Typebot,
+  type TypebotV6,
   resultsTablePreferencesSchema,
   typebotV5Schema,
   typebotV6Schema,
-} from '@typebot.io/schemas'
-import { z } from 'zod'
-import { getUserRoleInWorkspace } from '@/features/workspace/helpers/getUserRoleInWorkspace'
+} from "@typebot.io/typebot/schemas/typebot";
+import { z } from "@typebot.io/zod";
 import {
   sanitizeFolderId,
   sanitizeGroups,
   sanitizeSettings,
   sanitizeVariables,
-} from '../helpers/sanitizers'
-import { preprocessTypebot } from '@typebot.io/schemas/features/typebot/helpers/preprocessTypebot'
-import { migrateTypebot } from '@typebot.io/migrations/migrateTypebot'
-import { trackEvents } from '@typebot.io/telemetry/trackEvents'
+} from "../helpers/sanitizers";
 
 const omittedProps = {
   id: true,
@@ -31,44 +33,48 @@ const omittedProps = {
   updatedAt: true,
   customDomain: true,
   workspaceId: true,
-  resultsTablePreferencesSchema: true,
+  resultsTablePreferences: true,
   selectedThemeTemplateId: true,
   publicId: true,
-} as const
+} as const;
 
 const importingTypebotSchema = z.preprocess(
   preprocessTypebot,
-  z.discriminatedUnion('version', [
+  z.discriminatedUnion("version", [
     typebotV6Schema
       .omit(omittedProps)
       .extend({
         resultsTablePreferences: resultsTablePreferencesSchema.nullish(),
         selectedThemeTemplateId: z.string().nullish(),
+        workspaceId: z.string().optional(),
+        id: z.string().optional(),
       })
       .openapi({
-        title: 'Typebot V6',
+        title: "Typebot V6",
       }),
-    typebotV5Schema._def.schema
+    typebotV5Schema
       .omit(omittedProps)
       .extend({
         resultsTablePreferences: resultsTablePreferencesSchema.nullish(),
         selectedThemeTemplateId: z.string().nullish(),
+        workspaceId: z.string().optional(),
+        id: z.string().optional(),
       })
       .openapi({
-        title: 'Typebot V5',
+        title: "Typebot V5",
       }),
-  ])
-)
+  ]),
+);
 
-type ImportingTypebot = z.infer<typeof importingTypebotSchema>
+type ImportingTypebot = z.infer<typeof importingTypebotSchema>;
 
 const migrateImportingTypebot = (
-  typebot: ImportingTypebot
+  typebot: ImportingTypebot,
 ): Promise<TypebotV6> => {
   const fullTypebot = {
     ...typebot,
-    id: 'dummy id',
-    workspaceId: 'dummy workspace id',
+    id: "dummy id",
+    workspaceId: "dummy workspace id",
     resultsTablePreferences: typebot.resultsTablePreferences ?? null,
     selectedThemeTemplateId: typebot.selectedThemeTemplateId ?? null,
     createdAt: new Date(),
@@ -79,18 +85,18 @@ const migrateImportingTypebot = (
     whatsAppCredentialsId: null,
     publicId: null,
     riskLevel: null,
-  } satisfies Typebot
-  return migrateTypebot(fullTypebot)
-}
+  } satisfies Typebot;
+  return migrateTypebot(fullTypebot);
+};
 
 export const importTypebot = authenticatedProcedure
   .meta({
     openapi: {
-      method: 'POST',
-      path: '/v1/typebots/import',
+      method: "POST",
+      path: "/v1/typebots/import",
       protect: true,
-      summary: 'Import a typebot',
-      tags: ['Typebot'],
+      summary: "Import a typebot",
+      tags: ["Typebot"],
     },
   })
   .input(
@@ -98,82 +104,103 @@ export const importTypebot = authenticatedProcedure
       workspaceId: z
         .string()
         .describe(
-          '[Where to find my workspace ID?](../how-to#how-to-find-my-workspaceid)'
+          "[Where to find my workspace ID?](../how-to#how-to-find-my-workspaceid)",
         ),
       typebot: importingTypebotSchema,
-    })
+      fromTemplate: z.string().optional(),
+    }),
   )
   .output(
     z.object({
       typebot: typebotV6Schema,
-    })
+    }),
   )
-  .mutation(async ({ input: { typebot, workspaceId }, ctx: { user } }) => {
-    const workspace = await prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { id: true, members: true, plan: true },
-    })
-    const userRole = getUserRoleInWorkspace(user.id, workspace?.members)
-    if (
-      userRole === undefined ||
-      userRole === WorkspaceRole.GUEST ||
-      !workspace
-    )
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Workspace not found' })
+  .mutation(
+    async ({
+      input: { typebot, workspaceId, fromTemplate },
+      ctx: { user },
+    }) => {
+      const workspace = await prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { id: true, members: true, plan: true },
+      });
+      const userRole = getUserModeInWorkspace(user.id, workspace?.members);
+      if (userRole === "guest" || !workspace)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Workspace not found",
+        });
 
-    const migratedTypebot = await migrateImportingTypebot(typebot)
+      const newBotId = createId();
 
-    const groups = (
-      migratedTypebot.groups
-        ? await sanitizeGroups(workspaceId)(migratedTypebot.groups)
-        : []
-    ) as TypebotV6['groups']
+      let duplicatingBot = await duplicateTypebotS3Objects({
+        typebot,
+        newTypebotId: newBotId,
+        newWorkspaceId: workspaceId,
+      });
 
-    const newTypebot = await prisma.typebot.create({
-      data: {
-        version: '6',
-        workspaceId,
-        name: migratedTypebot.name,
-        icon: migratedTypebot.icon,
-        selectedThemeTemplateId: migratedTypebot.selectedThemeTemplateId,
-        groups,
-        events: migratedTypebot.events ?? undefined,
-        theme: migratedTypebot.theme ? migratedTypebot.theme : {},
-        settings: migratedTypebot.settings
-          ? sanitizeSettings(migratedTypebot.settings, workspace.plan, 'create')
-          : workspace.plan === Plan.FREE
-          ? {
-              general: {
-                isBrandingEnabled: true,
-              },
-            }
-          : {},
-        folderId: await sanitizeFolderId({
-          folderId: migratedTypebot.folderId,
-          workspaceId: workspace.id,
-        }),
-        variables: migratedTypebot.variables
-          ? sanitizeVariables({ variables: migratedTypebot.variables, groups })
-          : [],
-        edges: migratedTypebot.edges ?? [],
-        resultsTablePreferences:
-          migratedTypebot.resultsTablePreferences ?? undefined,
-      } satisfies Partial<TypebotV6>,
-    })
+      duplicatingBot = await migrateImportingTypebot(duplicatingBot);
 
-    const parsedNewTypebot = typebotV6Schema.parse(newTypebot)
+      const groups = (
+        duplicatingBot.groups
+          ? await sanitizeGroups(workspace)(duplicatingBot.groups)
+          : []
+      ) as TypebotV6["groups"];
 
-    await trackEvents([
-      {
-        name: 'Typebot created',
-        workspaceId: parsedNewTypebot.workspaceId,
-        typebotId: parsedNewTypebot.id,
-        userId: user.id,
+      const newTypebot = await prisma.typebot.create({
         data: {
-          name: newTypebot.name,
-        },
-      },
-    ])
+          id: newBotId,
+          version: duplicatingBot.version,
+          workspaceId,
+          name: duplicatingBot.name,
+          icon: duplicatingBot.icon,
+          selectedThemeTemplateId: duplicatingBot.selectedThemeTemplateId,
+          groups,
+          events: duplicatingBot.events ?? undefined,
+          theme: duplicatingBot.theme ? duplicatingBot.theme : {},
+          settings: duplicatingBot.settings
+            ? sanitizeSettings(
+                duplicatingBot.settings,
+                workspace.plan,
+                "create",
+              )
+            : workspace.plan === Plan.FREE
+              ? {
+                  general: {
+                    isBrandingEnabled: true,
+                  },
+                }
+              : {},
+          folderId: await sanitizeFolderId({
+            folderId: duplicatingBot.folderId,
+            workspaceId: workspace.id,
+          }),
+          variables: duplicatingBot.variables
+            ? sanitizeVariables({
+                variables: duplicatingBot.variables,
+                groups,
+              })
+            : [],
+          edges: duplicatingBot.edges ?? [],
+          resultsTablePreferences:
+            duplicatingBot.resultsTablePreferences ?? undefined,
+        } satisfies Partial<TypebotV6>,
+      });
 
-    return { typebot: parsedNewTypebot }
-  })
+      const parsedNewTypebot = typebotV6Schema.parse(newTypebot);
+
+      await trackEvents([
+        {
+          name: "Typebot created",
+          workspaceId: parsedNewTypebot.workspaceId,
+          typebotId: parsedNewTypebot.id,
+          userId: user.id,
+          data: {
+            template: fromTemplate,
+          },
+        },
+      ]);
+
+      return { typebot: parsedNewTypebot };
+    },
+  );

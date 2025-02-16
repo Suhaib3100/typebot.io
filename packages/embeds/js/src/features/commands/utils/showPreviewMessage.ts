@@ -1,12 +1,18 @@
-import { CommandData, ShowMessageCommandData } from '../types'
+import type {
+  CommandArgs,
+  CommandData,
+  ShowMessageCommandData,
+} from "../types";
 
 export const showPreviewMessage = (
-  proactiveMessage?: ShowMessageCommandData['message']
+  proactiveMessage: ShowMessageCommandData["message"] | undefined,
+  { id }: CommandArgs = {},
 ) => {
   const message: CommandData = {
     isFromTypebot: true,
-    command: 'showPreviewMessage',
+    command: "showPreviewMessage",
     message: proactiveMessage,
-  }
-  window.postMessage(message)
-}
+    id,
+  };
+  window.postMessage(message);
+};

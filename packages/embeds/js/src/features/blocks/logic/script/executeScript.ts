@@ -1,50 +1,54 @@
-import { stringifyError } from '@typebot.io/lib/stringifyError'
-import type { ChatLog, ScriptToExecute } from '@typebot.io/schemas'
+import type { ScriptToExecute } from "@typebot.io/bot-engine/schemas/clientSideAction";
+import { parseUnknownClientError } from "@typebot.io/lib/parseUnknownClientError";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
+const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
 
-export const executeScript = async ({
-  content,
-  args,
-}: ScriptToExecute): Promise<void | { logs: ChatLog[] }> => {
+export const executeScript = async ({ content, args }: ScriptToExecute) => {
   try {
     const func = AsyncFunction(
       ...args.map((arg) => arg.id),
-      parseContent(content)
-    )
-    await func(...args.map((arg) => arg.value))
+      parseContent(content),
+    );
+    const result = await func(...args.map((arg) => arg.value));
+    if (result && typeof result === "string")
+      return {
+        scriptCallbackMessage: result,
+      };
   } catch (err) {
+    console.log(err);
     return {
       logs: [
-        {
-          status: 'error',
-          description: 'Script block failed to execute',
-          details: stringifyError(err),
-        },
+        await parseUnknownClientError({
+          err,
+          context: "While executing script",
+        }),
       ],
-    }
+    };
   }
-}
+};
 
 const parseContent = (content: string) => {
   const contentWithoutScriptTags = content
-    .replace(/<script>/g, '')
-    .replace(/<\/script>/g, '')
-  return contentWithoutScriptTags
-}
+    .replace(/<script>/g, "")
+    .replace(/<\/script>/g, "");
+  return contentWithoutScriptTags;
+};
 
 export const executeCode = async ({
   args,
   content,
 }: {
-  content: string
-  args: Record<string, unknown>
+  content: string;
+  args: Record<string, unknown>;
 }) => {
   try {
-    const func = AsyncFunction(...Object.keys(args), content)
-    await func(...Object.keys(args).map((key) => args[key]))
+    const func = AsyncFunction(...Object.keys(args), content);
+    const result = await func(...Object.keys(args).map((key) => args[key]));
+    if (result && typeof result === "string")
+      return {
+        scriptCallbackMessage: result,
+      };
   } catch (err) {
-    console.warn('Script threw an error:', err)
+    console.warn("Script threw an error:", err);
   }
-}
+};

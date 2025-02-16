@@ -1,13 +1,14 @@
-import { Alert, AlertIcon, Button, Link, Stack, Text } from '@chakra-ui/react'
-import { ExternalLinkIcon } from '@/components/icons'
-import { MakeComBlock, HttpRequest } from '@typebot.io/schemas'
-import React from 'react'
-import { HttpRequestAdvancedConfigForm } from '../../webhook/components/HttpRequestAdvancedConfigForm'
+import { ExternalLinkIcon } from "@/components/icons";
+import { Alert, AlertIcon, Button, Link, Stack, Text } from "@chakra-ui/react";
+import type { HttpRequest } from "@typebot.io/blocks-integrations/httpRequest/schema";
+import type { MakeComBlock } from "@typebot.io/blocks-integrations/makeCom/schema";
+import React from "react";
+import { HttpRequestAdvancedConfigForm } from "../../httpRequest/components/HttpRequestAdvancedConfigForm";
 
 type Props = {
-  block: MakeComBlock
-  onOptionsChange: (options: MakeComBlock['options']) => void
-}
+  block: MakeComBlock;
+  onOptionsChange: (options: MakeComBlock["options"]) => void;
+};
 
 export const MakeComSettings = ({
   block: { id: blockId, options },
@@ -17,14 +18,14 @@ export const MakeComSettings = ({
     onOptionsChange({
       ...options,
       webhook: newLocalWebhook,
-    })
-  }
+    });
+  };
 
-  const url = options?.webhook?.url
+  const url = options?.webhook?.url;
 
   return (
     <Stack spacing={4}>
-      <Alert status={url ? 'success' : 'info'} rounded="md">
+      <Alert status={url ? "success" : "info"} rounded="md">
         <AlertIcon />
         {url ? (
           <>Your scenario is correctly configured 🚀</>
@@ -35,7 +36,7 @@ export const MakeComSettings = ({
               as={Link}
               href="https://www.make.com/en/integrations/typebot"
               isExternal
-              colorScheme="blue"
+              colorScheme="orange"
             >
               <Text mr="2">Make.com</Text> <ExternalLinkIcon />
             </Button>
@@ -44,11 +45,11 @@ export const MakeComSettings = ({
       </Alert>
       <HttpRequestAdvancedConfigForm
         blockId={blockId}
-        webhook={options?.webhook}
+        httpRequest={options?.webhook}
         options={options}
-        onWebhookChange={setLocalWebhook}
+        onHttpRequestChange={setLocalWebhook}
         onOptionsChange={onOptionsChange}
       />
     </Stack>
-  )
-}
+  );
+};

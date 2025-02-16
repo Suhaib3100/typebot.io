@@ -1,31 +1,27 @@
-import { initTRPC } from '@trpc/server'
-import { OpenApiMeta } from '@lilyrose2798/trpc-openapi'
-import superjson from 'superjson'
-import { Context } from './context'
-import * as Sentry from '@sentry/nextjs'
+import * as Sentry from "@sentry/nextjs";
+import { initTRPC } from "@trpc/server";
+import type { OpenApiMeta } from "@typebot.io/trpc-openapi/types";
+import superjson from "superjson";
+import type { Context } from "./context";
 
 const t = initTRPC.context<Context>().meta<OpenApiMeta>().create({
   transformer: superjson,
-})
-
-const sentryMiddleware = t.middleware(
-  Sentry.Handlers.trpcMiddleware({
-    attachRpcInput: true,
-  })
-)
+});
 
 const injectUser = t.middleware(({ next, ctx }) => {
   return next({
     ctx: {
       user: ctx.user,
     },
-  })
-})
+  });
+});
 
-const finalMiddleware = sentryMiddleware.unstable_pipe(injectUser)
+const sentryMiddleware = t.middleware(Sentry.trpcMiddleware());
 
-export const middleware = t.middleware
+export const middleware = t.middleware;
 
-export const router = t.router
+export const router = t.router;
 
-export const publicProcedure = t.procedure.use(finalMiddleware)
+export const publicProcedure = t.procedure
+  .use(sentryMiddleware)
+  .use(injectUser);

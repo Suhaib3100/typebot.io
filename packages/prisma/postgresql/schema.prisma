@@ -58,6 +58,8 @@ model User {
   sessions                    Session[]
   bannedIps                   BannedIp[]
   displayedInAppNotifications Json?
+  credentials                 UserCredentials[]
+  groupTitlesAutoGeneration   Json?
 }
 
 model ApiToken {
@@ -98,6 +100,9 @@ model Workspace {
   isPastDue                     Boolean               @default(false)
   isVerified                    Boolean?
   themeTemplates                ThemeTemplate[]
+  chatsHardLimit                Int?
+  // TODO: remove
+  settings                      Json?
 }
 
 model MemberInWorkspace {
@@ -138,6 +143,17 @@ model Credentials {
   type        String
   iv          String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model UserCredentials {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  data      String   @db.Text
+  name      String
+  type      String
+  iv        String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -280,6 +296,7 @@ model Log {
   createdAt   DateTime @default(now())
   resultId    String
   status      String
+  context     String?
   description String
   details     String?
   result      Result   @relation(fields: [resultId], references: [id], onDelete: Cascade)

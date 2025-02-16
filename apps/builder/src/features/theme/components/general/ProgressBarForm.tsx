@@ -1,9 +1,8 @@
-import { ColorPicker } from '@/components/ColorPicker'
-import { DropdownList } from '@/components/DropdownList'
-import { SwitchWithRelatedSettings } from '@/components/SwitchWithRelatedSettings'
-import { NumberInput } from '@/components/inputs'
-import { FormLabel, HStack } from '@chakra-ui/react'
-import { ProgressBar } from '@typebot.io/schemas'
+import { ColorPicker } from "@/components/ColorPicker";
+import { DropdownList } from "@/components/DropdownList";
+import { SwitchWithRelatedSettings } from "@/components/SwitchWithRelatedSettings";
+import { NumberInput } from "@/components/inputs";
+import { FormLabel, HStack } from "@chakra-ui/react";
 import {
   defaultProgressBarBackgroundColor,
   defaultProgressBarColor,
@@ -13,38 +12,42 @@ import {
   defaultProgressBarThickness,
   progressBarPlacements,
   progressBarPositions,
-} from '@typebot.io/schemas/features/typebot/theme/constants'
+} from "@typebot.io/theme/constants";
+import type { ProgressBar } from "@typebot.io/theme/schemas";
+import type { TypebotV6 } from "@typebot.io/typebot/schemas/typebot";
 
 type Props = {
-  progressBar: ProgressBar | undefined
-  onProgressBarChange: (progressBar: ProgressBar) => void
-}
+  typebotVersion: TypebotV6["version"];
+  progressBar: ProgressBar | undefined;
+  onProgressBarChange: (progressBar: ProgressBar) => void;
+};
 
 export const ProgressBarForm = ({
+  typebotVersion,
   progressBar,
   onProgressBarChange,
 }: Props) => {
   const updateEnabled = (isEnabled: boolean) =>
-    onProgressBarChange({ ...progressBar, isEnabled })
+    onProgressBarChange({ ...progressBar, isEnabled });
 
   const updateColor = (color: string) =>
-    onProgressBarChange({ ...progressBar, color })
+    onProgressBarChange({ ...progressBar, color });
 
   const updatePlacement = (placement: (typeof progressBarPlacements)[number]) =>
-    onProgressBarChange({ ...progressBar, placement })
+    onProgressBarChange({ ...progressBar, placement });
 
   const updatePosition = (position: (typeof progressBarPositions)[number]) =>
-    onProgressBarChange({ ...progressBar, position })
+    onProgressBarChange({ ...progressBar, position });
 
   const updateThickness = (thickness?: number) =>
-    onProgressBarChange({ ...progressBar, thickness })
+    onProgressBarChange({ ...progressBar, thickness });
 
   const updateBackgroundColor = (backgroundColor: string) =>
-    onProgressBarChange({ ...progressBar, backgroundColor })
+    onProgressBarChange({ ...progressBar, backgroundColor });
 
   return (
     <SwitchWithRelatedSettings
-      label={'Enable progress bar?'}
+      label={"Enable progress bar?"}
       initialValue={progressBar?.isEnabled ?? defaultProgressBarIsEnabled}
       onCheckChange={updateEnabled}
     >
@@ -63,7 +66,8 @@ export const ProgressBarForm = ({
         </FormLabel>
         <ColorPicker
           defaultValue={
-            progressBar?.backgroundColor ?? defaultProgressBarBackgroundColor
+            progressBar?.backgroundColor ??
+            defaultProgressBarBackgroundColor[typebotVersion]
           }
           onColorChange={updateBackgroundColor}
         />
@@ -73,7 +77,9 @@ export const ProgressBarForm = ({
           Color:
         </FormLabel>
         <ColorPicker
-          defaultValue={progressBar?.color ?? defaultProgressBarColor}
+          defaultValue={
+            progressBar?.color ?? defaultProgressBarColor[typebotVersion]
+          }
           onColorChange={updateColor}
         />
       </HStack>
@@ -96,5 +102,5 @@ export const ProgressBarForm = ({
         items={progressBarPositions}
       />
     </SwitchWithRelatedSettings>
-  )
-}
+  );
+};

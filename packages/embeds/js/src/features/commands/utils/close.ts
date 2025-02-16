@@ -1,9 +1,10 @@
-import { CommandData } from '../types'
+import type { CommandArgs, CommandData } from "../types";
 
-export const close = () => {
+export const close = ({ id }: CommandArgs = {}) => {
   const message: CommandData = {
     isFromTypebot: true,
-    command: 'close',
-  }
-  window.postMessage(message)
-}
+    command: "close",
+    id,
+  };
+  window.postMessage(message);
+};

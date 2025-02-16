@@ -1,13 +1,19 @@
 {
   "name": "@typebot.io/theme",
-  "version": "1.0.0",
-  "description": "",
-  "scripts": {},
-  "keywords": [],
-  "author": "Baptiste Arnaud",
-  "license": "AGPL-3.0-or-later",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./*": "./src/*.ts",
+    "./helpers/*": "./src/helpers/*.ts"
+  },
   "dependencies": {
-    "@typebot.io/schemas": "workspace:*",
-    "@typebot.io/lib": "workspace:*"
+    "@typebot.io/lib": "workspace:*",
+    "@typebot.io/prisma": "workspace:*",
+    "@typebot.io/zod": "workspace:*",
+    "@typebot.io/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@typebot.io/tsconfig": "workspace:*"
   }
 }

@@ -3,12 +3,12 @@
   "display": "Next.js",
   "extends": "./base.json",
   "compilerOptions": {
+    "plugins": [{ "name": "next" }],
+    "jsx": "preserve",
     "allowJs": true,
     "incremental": true,
-    "jsx": "preserve",
     "lib": ["dom", "dom.iterable", "esnext"],
-    "module": "esnext",
     "resolveJsonModule": true,
-    "target": "es5"
+    "strictNullChecks": true
   }
 }

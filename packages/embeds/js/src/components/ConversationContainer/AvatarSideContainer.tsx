@@ -1,56 +1,64 @@
-import { createSignal, onCleanup, onMount } from 'solid-js'
-import { isMobile } from '@/utils/isMobileSignal'
-import { Avatar } from '../avatars/Avatar'
+import { isMobile } from "@/utils/isMobileSignal";
+import { isChatContainerLight } from "@typebot.io/theme/helpers/isChatContainerLight";
+import type { Theme } from "@typebot.io/theme/schemas";
+import { createSignal, onCleanup, onMount } from "solid-js";
+import { Avatar } from "../avatars/Avatar";
 
 type Props = {
-  hostAvatarSrc?: string
-  hideAvatar?: boolean
-  isTransitionDisabled?: boolean
-}
+  hideAvatar?: boolean;
+  isTransitionDisabled?: boolean;
+  theme: Theme;
+};
 
 export const AvatarSideContainer = (props: Props) => {
-  let avatarContainer: HTMLDivElement | undefined
-  const [top, setTop] = createSignal<number>(0)
+  let avatarContainer: HTMLDivElement | undefined;
+  const [top, setTop] = createSignal<number>(0);
 
   const resizeObserver = new ResizeObserver((entries) =>
-    setTop(entries[0].target.clientHeight - (isMobile() ? 24 : 40))
-  )
+    setTop(entries[0]!.target.clientHeight - (isMobile() ? 24 : 40)),
+  );
 
   onMount(() => {
     if (avatarContainer) {
-      resizeObserver.observe(avatarContainer)
+      resizeObserver.observe(avatarContainer);
     }
-  })
+  });
 
   onCleanup(() => {
     if (avatarContainer) {
-      resizeObserver.unobserve(avatarContainer)
+      resizeObserver.unobserve(avatarContainer);
     }
-  })
+  });
 
   return (
     <div
       ref={avatarContainer}
       class={
-        'flex flex-shrink-0 items-center relative typebot-avatar-container ' +
-        (isMobile() ? 'w-6' : 'w-10')
+        "flex flex-shrink-0 items-center relative typebot-avatar-container " +
+        (isMobile() ? "w-6" : "w-10")
       }
     >
       <div
         class={
-          'absolute flex items-center top-0' +
-          (isMobile() ? ' w-6 h-6' : ' w-10 h-10') +
-          (props.hideAvatar ? ' opacity-0' : ' opacity-100')
+          "absolute flex items-center top-0" +
+          (isMobile() ? " w-6 h-6" : " w-10 h-10") +
+          (props.hideAvatar ? " opacity-0" : " opacity-100")
         }
         style={{
           top: `${top()}px`,
           transition: props.isTransitionDisabled
             ? undefined
-            : 'top 350ms ease-out, opacity 250ms ease-out',
+            : "top 350ms ease-out, opacity 250ms ease-out",
         }}
       >
-        <Avatar initialAvatarSrc={props.hostAvatarSrc} />
+        <Avatar
+          src={props.theme.chat?.hostAvatar?.url}
+          isChatContainerLight={isChatContainerLight({
+            chatContainer: props.theme.chat?.container,
+            generalBackground: props.theme.general?.background,
+          })}
+        />
       </div>
     </div>
-  )
-}
+  );
+};

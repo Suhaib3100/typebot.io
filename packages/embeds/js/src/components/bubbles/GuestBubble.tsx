@@ -1,100 +1,119 @@
-import { createSignal, For, Show, Switch, Match } from 'solid-js'
-import { Avatar } from '../avatars/Avatar'
-import { isMobile } from '@/utils/isMobileSignal'
-import {
+import { FilePreview } from "@/features/blocks/inputs/fileUpload/components/FilePreview";
+import type {
   InputSubmitContent,
   RecordingInputSubmitContent,
   TextInputSubmitContent,
-} from '@/types'
-import { Modal } from '../Modal'
-import { isNotEmpty } from '@typebot.io/lib'
-import { FilePreview } from '@/features/blocks/inputs/fileUpload/components/FilePreview'
-import clsx from 'clsx'
+} from "@/types";
+import { isMobile } from "@/utils/isMobileSignal";
+import { isNotEmpty } from "@typebot.io/lib/utils";
+import {
+  defaultGuestAvatarIsEnabled,
+  defaultHostAvatarIsEnabled,
+} from "@typebot.io/theme/constants";
+import { isChatContainerLight } from "@typebot.io/theme/helpers/isChatContainerLight";
+import type { Theme } from "@typebot.io/theme/schemas";
+import clsx from "clsx";
+import { For, Match, Show, Switch, createSignal } from "solid-js";
+import { Modal } from "../Modal";
+import { Avatar } from "../avatars/Avatar";
 
 type Props = {
-  answer?: InputSubmitContent
-  showAvatar: boolean
-  avatarSrc?: string
-  hasHostAvatar: boolean
-}
+  answer?: InputSubmitContent;
+  theme: Theme;
+};
 
 export const GuestBubble = (props: Props) => {
   return (
     <div
       class="flex justify-end items-end animate-fade-in gap-2 guest-container"
       style={{
-        'margin-left': props.hasHostAvatar
-          ? isMobile()
-            ? '28px'
-            : '50px'
-          : undefined,
+        "margin-left":
+          (props.theme.chat?.hostAvatar?.isEnabled ??
+          defaultHostAvatarIsEnabled)
+            ? isMobile()
+              ? "28px"
+              : "50px"
+            : undefined,
       }}
     >
       <Switch>
-        <Match when={props.answer?.type === 'text'}>
+        <Match when={props.answer?.type === "text"}>
           <TextGuestBubble answer={props.answer as TextInputSubmitContent} />
         </Match>
-        <Match when={props.answer?.type === 'recording'}>
+        <Match when={props.answer?.type === "recording"}>
           <AudioGuestBubble
             answer={props.answer as RecordingInputSubmitContent}
           />
         </Match>
       </Switch>
 
-      <Show when={props.showAvatar}>
-        <Avatar initialAvatarSrc={props.avatarSrc} />
+      <Show
+        when={
+          props.theme.chat?.guestAvatar?.isEnabled ??
+          defaultGuestAvatarIsEnabled
+        }
+      >
+        <Avatar
+          src={props.theme.chat?.guestAvatar?.url}
+          isChatContainerLight={isChatContainerLight({
+            chatContainer: props.theme.chat?.container,
+            generalBackground: props.theme.general?.background,
+          })}
+        />
       </Show>
     </div>
-  )
-}
+  );
+};
 
 const TextGuestBubble = (props: { answer: TextInputSubmitContent }) => {
-  const [clickedImageSrc, setClickedImageSrc] = createSignal<string>()
+  const [clickedImageSrc, setClickedImageSrc] = createSignal<string>();
 
   return (
     <div class="flex flex-col gap-1 items-end">
       <Show when={(props.answer.attachments ?? []).length > 0}>
         <div
           class={clsx(
-            'flex gap-1 overflow-auto max-w-[350px]',
-            isMobile() ? 'flex-wrap justify-end' : 'items-center'
+            "flex gap-1 overflow-auto max-w-[350px]",
+            isMobile() ? "flex-wrap justify-end" : "items-center",
           )}
         >
           <For
             each={props.answer.attachments?.filter((attachment) =>
-              attachment.type.startsWith('image')
+              attachment.type.startsWith("image"),
             )}
           >
             {(attachment, idx) => (
               <img
-                src={attachment.url}
+                src={attachment.blobUrl ?? attachment.url}
                 alt={`Attached image ${idx() + 1}`}
                 class={clsx(
-                  'typebot-guest-bubble-image-attachment cursor-pointer',
+                  "typebot-guest-bubble-image-attachment cursor-pointer",
                   props.answer.attachments!.filter((attachment) =>
-                    attachment.type.startsWith('image')
-                  ).length > 1 && 'max-w-[90%]'
+                    attachment.type.startsWith("image"),
+                  ).length > 1 && "max-w-[90%]",
                 )}
-                onClick={() => setClickedImageSrc(attachment.url)}
+                onClick={() =>
+                  setClickedImageSrc(attachment.blobUrl ?? attachment.url)
+                }
               />
             )}
           </For>
         </div>
         <div
           class={clsx(
-            'flex gap-1 overflow-auto max-w-[350px]',
-            isMobile() ? 'flex-wrap justify-end' : 'items-center'
+            "flex gap-1 overflow-auto max-w-[350px]",
+            isMobile() ? "flex-wrap justify-end" : "items-center",
           )}
         >
           <For
             each={props.answer.attachments?.filter(
-              (attachment) => !attachment.type.startsWith('image')
+              (attachment) => !attachment.type.startsWith("image"),
             )}
           >
             {(attachment) => (
               <FilePreview
                 file={{
-                  name: attachment.url.split('/').at(-1)!,
+                  name: attachment.url.split("/").at(-1)!,
                 }}
               />
             )}
@@ -118,12 +137,12 @@ const TextGuestBubble = (props: { answer: TextInputSubmitContent }) => {
         <img
           src={clickedImageSrc()}
           alt="Attachment"
-          style={{ 'border-radius': '6px' }}
+          style={{ "border-radius": "6px" }}
         />
       </Modal>
     </div>
-  )
-}
+  );
+};
 
 const AudioGuestBubble = (props: { answer: RecordingInputSubmitContent }) => {
   return (
@@ -132,8 +151,8 @@ const AudioGuestBubble = (props: { answer: RecordingInputSubmitContent }) => {
         class="p-2 w-full whitespace-pre-wrap typebot-guest-bubble flex flex-col"
         data-testid="guest-bubble"
       >
-        <audio controls src={props.answer.url} />
+        <audio controls src={props.answer.blobUrl ?? props.answer.url} />
       </div>
     </div>
-  )
-}
+  );
+};

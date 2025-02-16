@@ -1,4 +1,4 @@
-import { Icon, IconProps } from '@chakra-ui/react'
+import { Icon, type IconProps } from "@chakra-ui/react";
 
 export const StripeClimateLogo = (props: IconProps) => (
   <Icon
@@ -58,4 +58,4 @@ export const StripeClimateLogo = (props: IconProps) => (
       fill="url(#StripeClimate-gradient-c)"
     />
   </Icon>
-)
+);

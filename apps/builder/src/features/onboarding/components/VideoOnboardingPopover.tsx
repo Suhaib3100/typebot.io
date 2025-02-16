@@ -1,50 +1,65 @@
-import { CloseIcon, VideoPopoverIcon } from '@/components/icons'
+import { CloseIcon, VideoPopoverIcon } from "@/components/icons";
+import { useUser } from "@/features/user/hooks/useUser";
 import {
-  PopoverContent,
+  IconButton,
+  type IconButtonProps,
+  type PlacementWithLogical,
+  Popover,
   PopoverArrow,
   PopoverBody,
-  IconButton,
-  Popover,
+  PopoverContent,
   PopoverTrigger,
-  IconButtonProps,
-} from '@chakra-ui/react'
-import { useOnboardingDisclosure } from '../hooks/useOnboardingDisclosure'
-import { onboardingVideos } from '../data'
-import { useUser } from '@/features/account/hooks/useUser'
-import { ForgedBlockDefinition } from '@typebot.io/forge-repository/types'
-import { YoutubeIframe } from './YoutubeIframe'
+} from "@chakra-ui/react";
+import type { ForgedBlockDefinition } from "@typebot.io/forge-repository/definitions";
+import type { ReactNode } from "react";
+import { onboardingVideos } from "../data";
+import { useOnboardingDisclosure } from "../hooks/useOnboardingDisclosure";
+import { YoutubeIframe } from "./YoutubeIframe";
 
 type Props = {
-  type: keyof typeof onboardingVideos
-  defaultIsOpen?: boolean
-  blockDef?: ForgedBlockDefinition
-  children: ({ onToggle }: { onToggle: () => void }) => JSX.Element
-}
+  type: keyof typeof onboardingVideos;
+  isEnabled?: boolean;
+  blockDef?: ForgedBlockDefinition;
+  placement?: PlacementWithLogical;
+  children: ((props: { onOpen: () => void }) => JSX.Element) | ReactNode;
+};
 
-const Root = ({ type, blockDef, children }: Props) => {
-  const { user, updateUser } = useUser()
+const Root = ({
+  type,
+  blockDef,
+  children,
+  isEnabled,
+  placement = "right",
+}: Props): JSX.Element => {
+  const { user, updateUser } = useUser();
   const youtubeId =
-    onboardingVideos[type]?.youtubeId ?? blockDef?.onboarding?.youtubeId
-  const { isOpen, onClose, onToggle } = useOnboardingDisclosure({
+    onboardingVideos[type]?.youtubeId ?? blockDef?.onboarding?.youtubeId;
+  const { isOpen, onClose, onOpen } = useOnboardingDisclosure({
     key: type,
     updateUser,
     user,
     blockDef,
-  })
+    isEnabled,
+  });
 
-  if (!youtubeId) return children({ onToggle })
+  if (!youtubeId)
+    return typeof children === "function"
+      ? children({ onOpen })
+      : (children as JSX.Element);
 
   return (
-    <Popover isOpen={isOpen} placement="right" isLazy>
-      <PopoverTrigger>{children({ onToggle })}</PopoverTrigger>
+    <Popover isOpen={isOpen} placement={placement} isLazy>
+      <PopoverTrigger>
+        {typeof children === "function" ? children({ onOpen }) : children}
+      </PopoverTrigger>
 
-      <PopoverContent aspectRatio="1.5" width="640px">
+      <PopoverContent aspectRatio="1.5" width="640px" shadow="xl">
         <PopoverArrow />
         <PopoverBody h="full" p="5">
           <YoutubeIframe id={youtubeId} />
           <IconButton
             icon={<CloseIcon />}
-            aria-label={'Close'}
+            aria-label={"Close"}
             pos="absolute"
             top="-3"
             right="-3"
@@ -56,21 +71,21 @@ const Root = ({ type, blockDef, children }: Props) => {
         </PopoverBody>
       </PopoverContent>
     </Popover>
-  )
-}
+  );
+};
 
-const TriggerIconButton = (props: Omit<IconButtonProps, 'aria-label'>) => (
+const TriggerIconButton = (props: Omit<IconButtonProps, "aria-label">) => (
   <IconButton
     size="sm"
     icon={<VideoPopoverIcon />}
-    aria-label={'Open Bubbles help video'}
+    aria-label={"Open Bubbles help video"}
     variant="ghost"
-    colorScheme="blue"
+    colorScheme="orange"
     {...props}
   />
-)
+);
 
 export const VideoOnboardingPopover = {
   Root,
   TriggerIconButton,
-}
+};

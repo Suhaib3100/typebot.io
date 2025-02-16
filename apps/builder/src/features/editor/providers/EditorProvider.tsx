@@ -1,47 +1,60 @@
 import {
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
   createContext,
-  Dispatch,
-  ReactNode,
-  SetStateAction,
   useContext,
   useState,
-} from 'react'
+} from "react";
 
 export enum RightPanel {
-  PREVIEW,
-  VARIABLES,
+  PREVIEW = 0,
+  VARIABLES = 1,
 }
 
 const editorContext = createContext<{
-  rightPanel?: RightPanel
-  setRightPanel: Dispatch<SetStateAction<RightPanel | undefined>>
-  startPreviewAtGroup: string | undefined
-  setStartPreviewAtGroup: Dispatch<SetStateAction<string | undefined>>
-  startPreviewAtEvent: string | undefined
-  setStartPreviewAtEvent: Dispatch<SetStateAction<string | undefined>>
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  rightPanel?: RightPanel;
+  setRightPanel: Dispatch<SetStateAction<RightPanel | undefined>>;
+  startPreviewFrom:
+    | {
+        type: "group" | "event";
+        id: string;
+      }
+    | undefined;
+  setStartPreviewFrom: Dispatch<
+    SetStateAction<
+      | {
+          type: "group" | "event";
+          id: string;
+        }
+      | undefined
+    >
+  >;
   //@ts-ignore
-}>({})
+}>({});
 
 export const EditorProvider = ({ children }: { children: ReactNode }) => {
-  const [rightPanel, setRightPanel] = useState<RightPanel>()
-  const [startPreviewAtGroup, setStartPreviewAtGroup] = useState<string>()
-  const [startPreviewAtEvent, setStartPreviewAtEvent] = useState<string>()
+  const [rightPanel, setRightPanel] = useState<RightPanel>();
+  const [startPreviewFrom, setStartPreviewFrom] = useState<
+    | {
+        type: "group" | "event";
+        id: string;
+      }
+    | undefined
+  >();
 
   return (
     <editorContext.Provider
       value={{
         rightPanel,
         setRightPanel,
-        startPreviewAtGroup,
-        setStartPreviewAtGroup,
-        startPreviewAtEvent,
-        setStartPreviewAtEvent,
+        startPreviewFrom,
+        setStartPreviewFrom,
       }}
     >
       {children}
     </editorContext.Provider>
-  )
-}
+  );
+};
 
-export const useEditor = () => useContext(editorContext)
+export const useEditor = () => useContext(editorContext);

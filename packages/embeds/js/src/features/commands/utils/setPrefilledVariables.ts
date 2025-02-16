@@ -1,12 +1,14 @@
-import { CommandData } from '../types'
+import type { CommandArgs, CommandData } from "../types";
 
 export const setPrefilledVariables = (
-  variables: Record<string, string | number | boolean>
+  variables: Record<string, string | number | boolean>,
+  { id }: CommandArgs = {},
 ) => {
   const message: CommandData = {
     isFromTypebot: true,
-    command: 'setPrefilledVariables',
+    command: "setPrefilledVariables",
     variables,
-  }
-  window.postMessage(message)
-}
+    id,
+  };
+  window.postMessage(message);
+};

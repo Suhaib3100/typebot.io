@@ -1,0 +1,26 @@
+{
+  "name": "@typebot.io/rich-text",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@udecode/plate-basic-marks": "30.5.3",
+    "@udecode/plate-block-quote": "30.5.3",
+    "@udecode/plate-code-block": "30.7.0",
+    "@udecode/plate-common": "30.4.5",
+    "@udecode/plate-heading": "30.5.3",
+    "@udecode/plate-horizontal-rule": "30.5.3",
+    "@udecode/plate-link": "30.5.3",
+    "@udecode/plate-list": "30.5.3",
+    "@udecode/plate-media": "30.5.3",
+    "@udecode/plate-paragraph": "30.5.3",
+    "remark-parse": "11.0.0",
+    "unified": "11.0.5"
+  },
+  "devDependencies": {
+    "@typebot.io/tsconfig": "workspace:*"
+  }
+}
